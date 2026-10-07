@@ -16,15 +16,14 @@ const BOOK_VALIDATOR = {
 };
 
 async function initDatabase() {
+  const all = Object.values(models);
   // create collections first: transactions must not depend on implicit collection creation
-  await Promise.all(Object.values(models).map((m) => m.createCollection()));
-  await mongoose.connection.db.command({
-    collMod: 'books',
-    validator: BOOK_VALIDATOR,
-    validationLevel: 'strict',
-    validationAction: 'error',
-  });
-  await Promise.all(Object.values(models).map((m) => m.syncIndexes()));
+  await Promise.all(all.map((m) => m.createCollection()));
+  // wait for the automatic index builds, then bring the indexes in line with the schemas; changing the
+  // collection validator while an index build runs is refused by MongoDB
+  await Promise.all(all.map((m) => m.init()));
+  await Promise.all(all.map((m) => m.syncIndexes()));
+  await mongoose.connection.db.command({ collMod: 'books', validator: BOOK_VALIDATOR, validationLevel: 'strict', validationAction: 'error' });
 }
 
 async function connect(uri) {

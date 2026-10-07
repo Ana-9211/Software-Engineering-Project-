@@ -58,7 +58,7 @@ function createContainer({ config, clock, gateway, mailer, retryDelaysMs }) {
     categoryRepo: categoryRepository,
     reviewStats: (bookId, session) => reviewService.stats(bookId, session),
   });
-  const mediaService = createMediaService();
+  const mediaService = createMediaService({ clock, findReferencedImageIds: (ids) => bookRepository.findReferencedImageIds(ids) });
   const inventoryService = createInventoryService({ bookRepo: bookRepository, notificationService, toBook: catalogService.toBook });
   const bookManagementService = createBookManagementService({ bookRepo: bookRepository, catalogService, mediaService, inventoryService });
   const cartService = createCartService({ cartRepo: cartRepository, bookRepo: bookRepository, config });

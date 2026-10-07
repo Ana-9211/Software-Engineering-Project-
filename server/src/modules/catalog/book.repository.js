@@ -64,6 +64,9 @@ const bookRepository = {
   // only a pending listing can be decided
   decide: (id, update) => Book.findOneAndUpdate({ _id: id, status: 'pending' }, update, { new: true }).select(HIDE_SEARCH),
 
+  // which of the given image ids are used by any listing (including removed ones, whose history is kept)
+  findReferencedImageIds: (ids) => Book.distinct('imageIds', { imageIds: { $in: ids } }),
+
   countByCategory: (categoryId) => Book.countDocuments({ categoryId }),
 
   setRating: (id, avgRating, reviewCount, { session } = {}) =>

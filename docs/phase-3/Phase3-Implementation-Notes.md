@@ -22,7 +22,7 @@ Other databases: set `MONGODB_URI` to any replica set (Docker image `mongo --rep
 
 Demo accounts (password `Password123!`): `seller@bookstore.local` (customer and seller), `customer@bookstore.local`. The email provider is TBD, so the console mailer prints emails, including verification and reset links, to the server console; nothing is delivered. The payment provider is TBD, so the payment page uses a clearly labelled test gateway.
 
-Checks: `npm test` (server, 508 tests), `npm run test:client` (22 tests), `npm run lint`, `node e2e/e2e.mjs` (browser walkthrough, needs the server running and Edge or Chrome; see the header of that file).
+Checks: `npm test` (server, 510 tests), `npm run test:client` (23 tests), `npm run lint`, `node e2e/e2e.mjs` (browser walkthrough, needs the server running and Edge or Chrome; see the header of that file).
 
 ## 2. Structure
 
@@ -110,14 +110,14 @@ Test files are in `server/tests/api` unless noted. `E2E` is `e2e/e2e.mjs`; `CT` 
 | VFR-14 | transactions for reserve, confirm, release, cancel, review, approval | checkout, review-profile, seller-admin; the daily backup is a hosting task, not done |
 | VFR-15 | `openapi.yaml` unchanged; routes compared with it | openapi test (61 of 61) |
 
-VFR-01, VFR-02, VFR-03 are only indicated by the local measurement in section 6. VFR-12 (browsers) was checked only in Microsoft Edge.
+VFR-01, VFR-02 and VFR-03 are not validated; the local measurement in section 6 is indicative only. VFR-12 (browsers) was checked only in Microsoft Edge.
 
 ## 5. Implementation decisions and assumptions
 
 These fill gaps without changing Phase 1 or the approved design. Items marked **refinement** differ in detail from a Phase 2 table and are listed so the team can decide whether to update Phase 2.
 
 1. **Libraries (D-15).** `bcryptjs` (pure JavaScript, same bcrypt algorithm) instead of the native `bcrypt` package, to avoid native builds on student machines. Express 5, Mongoose 8, Joi, helmet, express-rate-limit, multer, jsonwebtoken. `nodemailer` was not added because no real mail adapter exists yet.
-2. **Refinement: sort indexes.** The indexes `{status, price}`, `{status, createdAt}`, `{status, avgRating}` and `{status, categoryId, price}` end with `_id` (and the rating index includes `createdAt`), because paging needs a stable order. Without it a plain browse of 10,000 books took about 1.4 s (in-memory sort). With it, 24 ms.
+2. **Phase 3 implementation refinement: `_id` appended to the sort indexes.** The indexes `{status, price}`, `{status, createdAt}`, `{status, avgRating}` and `{status, categoryId, price}` listed in Phase 2 (SDD 4.4.3 and 8.2) were extended: `_id` is appended (and `createdAt` is included in the rating index), and the API sorts by the same keys. The reason is deterministic, stable pagination: records with equal price, rating or timestamp are ordered by `_id`, so a record is never repeated or skipped between pages, and MongoDB can answer that order from the index instead of sorting every match in memory. It does not change the API contract, the page size, the filters or any requirement; it is an implementation refinement relative to the exact index list in Phase 2. Phase 2 was not edited. Effect measured on 10,000 books: a plain browse page went from about 1.4 s (in-memory sort) to about 24 ms (one request at a time).
 3. **Refinement: books returned to the public.** `stock` and `reserved` are only returned to the owner and administrators; the public book has `available` (stock minus reserved) and `stockStatus`.
 4. **Suspension response.** Suspending a user increases the token version, so the suspended user's open session gets 401 (not 403) on the next request; a login attempt gets 403 `ACCOUNT_SUSPENDED`.
 5. **Reactivation (D-05).** Reactivating an account that never verified its email returns it to `pending_verification`, so an administrator cannot skip verification by accident.
@@ -131,26 +131,44 @@ These fill gaps without changing Phase 1 or the approved design. Items marked **
 
 ## 6. Test evidence (executed)
 
-Run on the developer machine, Node 24.11, MongoDB 7.0.24 replica set (mongodb-memory-server for tests):
+Environment: one Windows 11 laptop, Node 24.11, MongoDB 7.0.24 replica set (mongodb-memory-server for the tests, a local single-node replica set for the browser walkthrough and the benchmark). Database, API server, browser and load generator all ran on the same machine.
 
 | Check | Command | Result |
 |---|---|---|
-| Server tests | `npm test` | 12 suites, 508 tests passed, 0 failed |
-| Server coverage | `npm run test:coverage -w server` | statements 94.18 %, branches 80.02 %, functions 95.71 %, lines 96.21 % (VFR-13 asks for 70 % lines) |
-| Client tests | `npm run test:client` | 1 file, 22 tests passed |
+| Server tests | `npm test` | 12 suites, 510 tests passed, 0 failed |
+| Server coverage | `npm run test:coverage -w server` | statements 94.19 %, branches 80.04 %, functions 95.55 %, lines 96.19 % (VFR-13 asks for 70 % lines) |
+| Client tests | `npm run test:client` | 1 file, 23 tests passed |
 | Lint | `npm run lint` | 0 errors, 0 warnings |
-| Browser walkthrough | `node e2e/e2e.mjs` | 40 of 40 steps passed (Microsoft Edge, real server and database) |
+| Browser walkthrough | `node e2e/e2e.mjs` | 41 of 41 steps passed (Microsoft Edge only, real server and database) |
 | OpenAPI | `openapi.test.js` | document valid; 61 route handlers, none missing, none extra |
-| Dependency audit | `npm audit --omit=dev` | 0 vulnerabilities in runtime dependencies. `npm audit` also reports advisories in the **test tools** Jest and Vitest (development only, not shipped); not upgraded because that needs breaking major versions |
-| Search benchmark | `node scripts/bench-search.js` (10,000 books, one machine running database, server and load generator) | 100 users with 1 s think time: p50 158 ms, p95 392 ms, 0 % errors. 100 simultaneous requests with no pause: p95 821 ms (saturated). Indicative only, not the formal performance test PT-01, PT-06 |
+| Access matrix | `authorization.test.js` | 244 cases generated from the SDD role table passed |
+| Concurrent reservation | `checkout.test.js` | 20 customers for 5 copies: exactly 5 succeed, reserved never above stock, stock never negative |
+| Dependency audit | `npm audit --omit=dev` | 0 vulnerabilities in runtime dependencies. `npm audit` also reports advisories in the development-only test tools Jest and Vitest (not shipped); not upgraded because that needs breaking major versions |
 
-Not run: OWASP ZAP baseline, Lighthouse, k6/JMeter load tests, Firefox, Chrome and Safari checks, TLS checks, backup and restore, uptime monitoring. These need a deployed environment or tools that are not installed.
+### Search benchmark (development machine only)
 
-## 7. Known limitations
+`node server/scripts/bench-search.js`: 10,000 approved books, a mix of 10 browse, search and filter requests against `GET /api/books`, 0 % errors in every run. It is a development-machine measurement. It is **not** the formal performance test (PT-01, PT-06), says nothing about a deployed system, and does **not** validate VFR-01, VFR-02 or VFR-03.
 
-- No real payment or email provider, hosting, or HTTPS (all TBD in Phase 2). The payment page cannot be reloaded mid-payment: the payment session is only returned by `POST /api/orders` (API-31 does not return it), so after a reload the customer must cancel and check out again.
+| Scenario | What it is | Results (repeated runs) |
+|---|---|---|
+| Normal load | 100 simulated users, each pausing 1 second between requests | p95 392 ms in the first run; later runs p95 889, 496, 512 and 500 ms (p50 158 to 308 ms) |
+| Saturation | 100 simultaneous requests, no pause | p95 821 ms and 925 ms (p50 477 and 539 ms) |
+| One request at a time | no concurrency | about 12 to 77 ms per request type (about 24 ms for a browse page) |
+
+Reading: individual queries are fast and use the indexes (a test checks for an index scan and no collection scan). Under 100 users the p95 on this machine is around the 500 ms limit and varies from run to run; the load generator, API server and database compete for the same CPU, so the numbers are noisy. The limit is therefore neither shown to be met nor shown to be missed. The real test needs a deployed environment and a separate load tool.
+
+### NOT RUN
+
+These were not run, so there is no result for them: **OWASP ZAP baseline scan, Lighthouse (performance and accessibility score), k6/JMeter load tests, Firefox, Chrome and Safari cross-browser testing (only Edge was used), TLS checks, backup and restore, uptime monitoring.** The axe-core check in the browser walkthrough is an automated accessibility rule check, not a Lighthouse score. The CSRF, injection, access control, upload and header checks are automated tests in `security.test.js` and `authorization.test.js`, not a ZAP scan.
+
+## 7. Known limitations and technical debt
+
+- No real payment or email provider, hosting, or HTTPS (all TBD in Phase 2).
+- **Payment page after a fresh visit.** The payment session (`clientConfig`) is returned only by `POST /api/orders` (API-27). `GET /api/orders/:orderId` (API-31) returns the order, the reservation expiry and the address, but not the payment session, so the approved contract cannot rebuild it. A normal page reload keeps working because the browser keeps the session in the history entry. If the page is opened without it (new tab, saved link), the screen shows a **Restart payment** button. It calls the existing API-27 with the address stored on the order; the contract already says an earlier unpaid order of the same customer is closed and its reservation released, and the cart is unchanged until payment, so the customer gets a new order and a new payment session with the same items. If someone else took the last copy in between, the customer gets the normal `INSUFFICIENT_STOCK` message. No endpoint was added. A cleaner fix (not done, needs a contract change) would be to return the payment session in API-31 for an order that is still `PendingPayment`, or to add a "get payment session" endpoint. Covered by a server test (`checkout.test.js`), a client test and a browser step.
+- **Unattached images.** Uploaded images that never get attached to a listing are now removed by `MediaService.cleanupOrphans()`: images older than 24 hours that no listing references (removed listings still count as references) are deleted from GridFS. It runs once an hour inside the web service (like the reservation sweeper) and needs no new endpoint. Limit: an image uploaded and then left unsaved for more than 24 hours is deleted, and the seller must upload it again. Covered by a test in `media.test.js`.
 - Editing a listing in the web app finds it by paging through `GET /api/seller/books` because the API has no single-listing endpoint.
-- Unattached uploaded images are not cleaned up (noted as optional in Phase 2).
-- Failed token emails (verification, reset) are retried three times in the process, but cannot be rebuilt later because the link is not stored; the user can ask for a new link.
+- A removed listing keeps its ISBN reserved for that seller (unique index `{sellerId, isbn}`).
+- Failed token emails (verification, reset) are retried three times in the process but cannot be rebuilt later because the link is not stored; the user can ask for a new link.
 - Refund failures stay `refund_pending` with no retry screen (A-05).
 - Logout ends all sessions of the user (D-14).
+- Startup order fix found during this audit: on an existing database, the automatic index builds could still be running when the books validator was applied, and MongoDB refused to start the server. `initDatabase` now waits for the index builds first.

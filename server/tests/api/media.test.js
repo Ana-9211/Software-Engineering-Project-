@@ -122,3 +122,20 @@ describe('images on listings (max 3, owned by the seller)', () => {
     expect((await seller.api.patch(`/api/seller/books/${created.body.id}`, { imageIds: [theirs] })).status).toBe(400);
   });
 });
+
+describe('cleanup of unattached images (D-09 orphans)', () => {
+  test('deletes old unused images, keeps attached and recent ones', async () => {
+    const attached = (await upload(seller.api, JPEG)).body.imageId;
+    const orphan = (await upload(seller.api, JPEG)).body.imageId;
+    await seller.api.post('/api/seller/books', {
+      title: 'Keeps Image', author: 'A', isbn: nextIsbn(), price: 1000, categoryId: String(category._id), language: 'English', stock: 1, imageIds: [attached],
+    });
+    expect(await ctx.container.mediaService.cleanupOrphans()).toBe(0); // nothing is a day old yet
+    ctx.clock.advanceMinutes(25 * 60);
+    const deleted = await ctx.container.mediaService.cleanupOrphans();
+    expect(deleted).toBeGreaterThanOrEqual(1);
+    expect((await client(ctx.app).get(`/api/images/${orphan}`)).status).toBe(404);
+    expect((await client(ctx.app).get(`/api/images/${attached}`)).status).toBe(200);
+    expect(await ctx.container.mediaService.cleanupOrphans()).toBe(0); // repeating is harmless
+  });
+});

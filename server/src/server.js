@@ -18,11 +18,15 @@ async function main() {
   // failed confirmation emails are retried every 5 minutes
   const retryTimer = setInterval(() => container.notificationService.retryFailed().catch(() => {}), 5 * 60 * 1000);
 
+  // images that were uploaded but never attached to a listing are removed after a day
+  const orphanTimer = setInterval(() => container.mediaService.cleanupOrphans().catch((err) => logger.error('image cleanup failed', { error: err.message })), 60 * 60 * 1000);
+
   const server = app.listen(config.port, () => logger.info('server listening', { port: config.port, env: config.nodeEnv }));
 
   async function shutdown() {
     clearInterval(sweeperTimer);
     clearInterval(retryTimer);
+    clearInterval(orphanTimer);
     server.close(async () => {
       await container.notificationService.flush();
       await disconnect();

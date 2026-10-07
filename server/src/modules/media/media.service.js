@@ -15,7 +15,7 @@ function detectImageType(buffer) {
 }
 
 // BM-14 Media. Book images live in GridFS (D-09); this service hides the storage (saveImage, streamImage).
-function createMediaService() {
+function createMediaService({ clock = { now: () => new Date() }, findReferencedImageIds } = {}) {
   const bucket = () => new mongoose.mongo.GridFSBucket(mongoose.connection.db);
 
   return {
@@ -49,6 +49,27 @@ function createMediaService() {
         length: f.length,
         etag: `"${String(f._id)}"`,
       };
+    },
+
+    // Deletes images that were uploaded more than `olderThanHours` ago and are not used by any listing
+    // (D-09 "Orphans"). Returns how many were deleted. Safe to run repeatedly.
+    async cleanupOrphans({ olderThanHours = 24, batch = 200 } = {}) {
+      const cutoff = new Date(clock.now().getTime() - olderThanHours * 3600 * 1000);
+      let deleted = 0;
+      let after = null;
+      for (;;) {
+        const filter = { uploadDate: { $lt: cutoff } };
+        if (after) filter._id = { $gt: after };
+        const files = await bucket().find(filter).sort({ _id: 1 }).limit(batch).toArray();
+        if (files.length === 0) return deleted;
+        const used = new Set((await findReferencedImageIds(files.map((f) => f._id))).map(String));
+        for (const f of files) {
+          if (used.has(String(f._id))) continue;
+          await bucket().delete(f._id);
+          deleted += 1;
+        }
+        after = files[files.length - 1]._id;
+      }
     },
 
     // I-16: every image id must exist and belong to the seller

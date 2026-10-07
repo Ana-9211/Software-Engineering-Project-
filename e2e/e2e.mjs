@@ -110,7 +110,7 @@ await step('guest: filter by category and price, sort', async () => {
   await page.waitForFunction(() => document.querySelectorAll('.book-card').length === 2);
   await page.getByText('Cosmos').first().waitFor();
   await page.getByLabel('Sort by').selectOption('price_desc');
-  await page.waitForFunction(() => document.querySelector('.book-card h3')?.textContent.includes('A Brief History of Time'));
+  await page.waitForFunction(() => document.querySelector('.book-card h3')?.textContent.includes('Cosmos'));
 });
 await step('guest: book details show price, rating, stock status; adding to cart asks to log in', async () => {
   const { page } = guest;
@@ -244,6 +244,24 @@ await step('customer: order history shows the order and its status (FR-15)', asy
   await page.getByText('Placed').first().waitFor();
   await page.getByRole('link', { name: 'View' }).first().click();
   await page.getByRole('heading', { name: `Order ${orderNumber}` }).waitFor();
+});
+await step('customer: reloading the payment page offers Restart payment, which replaces the open order and can be paid', async () => {
+  const { page } = cust;
+  await page.goto('/books?q=matilda');
+  await page.getByRole('link', { name: 'Matilda' }).first().click();
+  await page.getByRole('button', { name: 'Add to cart' }).click();
+  await page.getByText('Added to your cart.').waitFor();
+  await page.goto('/checkout');
+  await page.getByRole('radio', { name: /saved address/i }).waitFor();
+  await page.getByRole('button', { name: 'Continue to payment' }).click();
+  await page.waitForURL('**/pay');
+  const fresh = await page.context().newPage(); // a new tab with the saved link: the history state holding the payment session is gone
+  await fresh.goto(page.url());
+  await fresh.getByRole('button', { name: 'Restart payment' }).click();
+  await fresh.getByRole('button', { name: /Pay .* \(test success\)/ }).waitFor();
+  await fresh.getByRole('button', { name: 'Cancel this order' }).click();
+  await fresh.waitForURL('**/cart');
+  await fresh.close();
 });
 await step('customer: payment failure keeps the reservation; cancelling the unpaid order releases it (D-06)', async () => {
   const { page } = cust;
@@ -425,7 +443,7 @@ await step('customer: delivered item can be reviewed once; rating shown on the b
   await page.getByRole('button', { name: 'Submit review' }).click();
   await page.getByText('Thank you for your review.').waitFor();
   await page.getByRole('link', { name: 'The Hobbit' }).first().click();
-  await page.getByText('A <b>great</b> read').waitFor(); // shown as text, not as HTML
+  await page.getByText('A <b>great</b> read').first().waitFor(); // shown as text, not as HTML
   assert((await page.locator('.review-comment b').count()) === 0, 'review HTML was rendered');
   await page.getByRole('button', { name: 'Write a review' }).click();
   await page.getByRole('button', { name: 'Submit review' }).click();

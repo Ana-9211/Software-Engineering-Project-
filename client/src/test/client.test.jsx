@@ -9,7 +9,7 @@ import Pagination from '../components/Pagination.jsx';
 import StarRating from '../components/StarRating.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { ReviewList } from '../modules/reviews/ReviewComponents.jsx';
-import { validateAddress } from '../modules/checkout/CheckoutPages.jsx';
+import { validateAddress, PaymentPage } from '../modules/checkout/CheckoutPages.jsx';
 import { validatePassword, EMAIL_PATTERN, RegisterPage } from '../modules/auth/AuthPages.jsx';
 import { RoleRoute } from '../auth/guards.jsx';
 import * as AuthModule from '../auth/AuthContext.jsx';
@@ -210,6 +210,32 @@ describe('register form (FR-01, UC-04)', () => {
     await userEvent.type(screen.getByLabelText('Password'), 'LongEnough1');
     await userEvent.click(screen.getByRole('button', { name: 'Register' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: /check your email/i })).toBeInTheDocument());
+    fetchSpy.mockRestore();
+  });
+});
+
+describe('payment page after a reload (S-11)', () => {
+  test('without the payment session it offers to restart from the stored address', async () => {
+    const address = { fullName: 'A B', line1: '1 St', city: 'C', state: 'S', postalCode: '123456', country: 'India', phone: '9999999999' };
+    const order = { id: 'o1', orderNumber: 'OB-1', status: 'PendingPayment', reservationExpiresAt: new Date(Date.now() + 600000).toISOString(), items: [], summary: { subtotal: 1, tax: 0, shippingFee: 0, total: 1 }, shippingAddress: address };
+    const calls = [];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      calls.push([url, init && init.method, init && init.body]);
+      if (url === '/api/auth/csrf-token') return json(200, { csrfToken: 't' });
+      if (url === '/api/orders' && init.method === 'POST') return json(201, { order: { ...order, id: 'o2' }, payment: { clientConfig: { mode: 'fake', successPayment: {}, failurePayment: {} } } });
+      return json(200, order);
+    });
+    render(
+      <MemoryRouter initialEntries={['/checkout/o1/pay']}>
+        <Routes>
+          <Route path="/checkout/:orderId/pay" element={<PaymentPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Restart payment' }));
+    await waitFor(() => expect(calls.some(([u, m]) => u === '/api/orders' && m === 'POST')).toBe(true));
+    const post = calls.find(([u, m]) => u === '/api/orders' && m === 'POST');
+    expect(JSON.parse(post[2])).toEqual({ shippingAddress: address });
     fetchSpy.mockRestore();
   });
 });

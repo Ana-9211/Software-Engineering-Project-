@@ -193,6 +193,21 @@ export function PaymentPage() {
     }
   }
 
+  // After a reload the payment session is gone (API-31 does not return it). Starting the checkout again from
+  // the address stored on the order replaces the open order with a new one (API-27), using the same cart.
+  async function restart(o) {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await orderApi.create({ shippingAddress: o.shippingAddress });
+      navigate(`/checkout/${result.order.id}/pay`, { replace: true, state: { checkout: result } });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function cancel() {
     setBusy(true);
     try {
@@ -238,7 +253,10 @@ export function PaymentPage() {
                   </div>
                 )}
                 {payable && !config && (
-                  <p className="alert alert-info" role="status">The payment session is not available any more (for example after a page reload). Cancel this order and start the checkout again.</p>
+                  <div className="alert alert-info" role="status">
+                    <span>The payment session is not available any more (for example after a page reload). Restart the payment to continue with the same address and cart.</span>
+                    <button type="button" className="btn btn-primary" disabled={busy} onClick={() => restart(o)}>Restart payment</button>
+                  </div>
                 )}
                 {o.status === 'PendingPayment' && <button type="button" className="btn btn-danger" disabled={busy} onClick={cancel}>Cancel this order</button>}
               </div>

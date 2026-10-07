@@ -261,6 +261,23 @@ describe('payment confirmation (FR-13, FR-14, UC-09)', () => {
   });
 });
 
+describe('recovering a payment page after a reload (existing contract only)', () => {
+  test('GET order has no payment session, but a new checkout from the stored address replaces the open one', async () => {
+    const book = await newBook({ stock: 5 });
+    const a = await buyerWithCart([[book, 2]]);
+    const first = await checkout(a.api);
+    const seen = await a.api.get(`/api/orders/${first.body.order.id}`);
+    expect(seen.body.status).toBe('PendingPayment');
+    expect(seen.body.reservationExpiresAt).toBeTruthy();
+    expect(JSON.stringify(seen.body)).not.toMatch(/clientConfig|successPayment/); // not recoverable from API-31
+    const again = await checkout(a.api, { shippingAddress: seen.body.shippingAddress });
+    expect(again.status).toBe(201);
+    expect(again.body.payment.clientConfig.successPayment).toBeTruthy();
+    expect(await stockOf(book)).toMatchObject({ reserved: 2 }); // replaced, not doubled
+    expect((await paySuccess(a.api, again)).status).toBe(200);
+  });
+});
+
 describe('release: payment failure, abandoned checkout and expiry', () => {
   test('cancelling an unpaid order releases the reservation without a refund', async () => {
     const book = await newBook({ stock: 5 });
