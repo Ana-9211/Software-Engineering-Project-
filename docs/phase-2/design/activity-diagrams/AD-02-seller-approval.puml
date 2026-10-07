@@ -1,0 +1,75 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 130
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title AD-02 Seller application and listing approval (UC-15, UC-16, UC-21)
+|Customer|
+start
+:Submit seller application;
+|Administrator|
+:Review application;
+if (Approve?) then (yes)
+  |System|
+  :Grant seller role (customer role kept),\nrecord decision;
+else (no)
+  |System|
+  :Record rejection reason;
+  |Customer|
+  :See rejection, may apply again;
+  stop
+endif
+|Seller|
+:Create listing with images;
+|System|
+:Save listing as pending;
+|Administrator|
+:Review listing;
+if (Approve?) then (yes)
+  |System|
+  :Set listing approved\n(visible in catalog);
+else (no)
+  |System|
+  :Set listing rejected with reason;
+  |Seller|
+  :See reason, edit and resubmit;
+  stop
+endif
+|Seller|
+:Listing is on sale;
+stop
+@enduml

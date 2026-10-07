@@ -1,0 +1,99 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Database ER 2 of 2: Cart, Wishlist, Orders and Payment
+hide circle
+skinparam nodesep 45
+skinparam ranksep 55
+entity "users" as users {
+  * _id : ObjectId <<PK>>
+  --
+}
+entity "books" as books {
+  * _id : ObjectId <<PK>>
+  --
+}
+entity "carts" as carts {
+  * _id : ObjectId <<PK>>
+  --
+  * userId : ObjectId
+}
+entity "wishlists" as wishlists {
+  * _id : ObjectId <<PK>>
+  --
+  * userId : ObjectId
+}
+entity "orders" as orders {
+  * _id : ObjectId <<PK>>
+  --
+  * orderNumber : String
+  * userId : ObjectId
+  * status : String
+    paymentId : ObjectId
+    reservationExpiresAt : Date
+}
+entity "payments" as payments {
+  * _id : ObjectId <<PK>>
+  --
+  * orderId : ObjectId
+  * gatewayOrderId : String
+  * amount : Integer
+  * status : String
+}
+entity "CartItem\n(embedded in carts)" as CartItem {
+  * bookId : ObjectId
+  * quantity : Number
+}
+entity "OrderItem\n(embedded in orders)" as OrderItem {
+  * _id : ObjectId
+  * bookId : ObjectId
+  * sellerId : ObjectId
+  * quantity : Number
+  * fulfilmentStatus : String
+}
+users ||--o| carts
+users ||--o| wishlists
+users ||--o{ orders : places (userId)
+orders ||--|| payments : paymentId
+carts ||--o{ CartItem : items
+orders ||--|{ OrderItem : items
+CartItem }o--|| books : bookId
+OrderItem }o--|| books : bookId (snapshot)
+wishlists }o..o{ books : bookIds
+@enduml

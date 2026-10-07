@@ -1,0 +1,3659 @@
+openapi: 3.0.3
+info:
+  title: Online Bookstore REST API
+  version: 1.0.0
+  description: Phase 2 API definition. Money values are integers in minor currency units. Dates are ISO 8601 UTC.
+    Every error uses the Error schema. State-changing requests need the X-CSRF-Token header obtained from GET /api/auth/csrf-token,
+    except the payment webhook.
+servers:
+- url: /
+  description: Same origin as the web application (host TBD)
+tags:
+- name: Authentication and platform
+- name: Profile and addresses
+- name: Catalog, categories and images
+- name: Cart
+- name: Wishlist
+- name: Orders and payment
+- name: Reviews
+- name: Seller
+- name: Notifications
+- name: Administrator
+- name: System
+paths:
+  /api/auth/csrf-token:
+    get:
+      operationId: api_01
+      summary: Issue a CSRF token
+      tags:
+      - Authentication and platform
+      description: 'API-01. Requirements: VFR-06. Use cases: UC-04, UC-05, UC-14. Access: None. Validation: None.'
+      security: []
+      responses:
+        '200':
+          description: '{ csrfToken } and sets the CSRF cookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfToken'
+  /api/auth/register:
+    post:
+      operationId: api_02
+      summary: Register a customer account
+      tags:
+      - Authentication and platform
+      description: 'API-02. Requirements: FR-01, VFR-04. Use cases: UC-04, UC-25. Access: None. Validation: name
+        1-100 chars; email valid, stored lower-case; password 8-72 chars.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 72
+              required:
+              - name
+              - email
+              - password
+      security:
+      - csrfToken: []
+      responses:
+        '201':
+          description: '{ message } (verification email queued)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'EMAIL_TAKEN: Email already registered'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 'RATE_LIMITED: Too many requests from this client'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'CSRF_INVALID: missing or wrong CSRF token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/verify-email:
+    post:
+      operationId: api_03
+      summary: Verify email address
+      tags:
+      - Authentication and platform
+      description: 'API-03. Requirements: FR-01. Use cases: UC-04. Access: None. Validation: token is a 32-128 character
+        string.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  minLength: 32
+                  maxLength: 128
+              required:
+              - token
+      security:
+      - csrfToken: []
+      responses:
+        '200':
+          description: '{ message }; account becomes active'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation; TOKEN_INVALID_OR_EXPIRED:
+            Token unknown, expired or already used'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'CSRF_INVALID: missing or wrong CSRF token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/resend-verification:
+    post:
+      operationId: api_04
+      summary: Resend verification email
+      tags:
+      - Authentication and platform
+      description: 'API-04. Requirements: FR-01. Use cases: UC-04, UC-25. Access: None. Validation: email valid.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+              - email
+      security:
+      - csrfToken: []
+      responses:
+        '200':
+          description: '{ message }; always the same text so existing emails are not revealed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 'RATE_LIMITED: Too many requests from this client'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'CSRF_INVALID: missing or wrong CSRF token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/login:
+    post:
+      operationId: api_05
+      summary: Log in
+      tags:
+      - Authentication and platform
+      description: 'API-05. Requirements: FR-02, FR-24, VFR-07. Use cases: UC-05. Access: None. Validation: email
+        valid; password present.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 72
+              required:
+              - email
+              - password
+      security:
+      - csrfToken: []
+      responses:
+        '200':
+          description: User object; session cookie set (HttpOnly, Secure, SameSite=Lax, 60 minutes)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'INVALID_CREDENTIALS: Email or password wrong (same response for both)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'EMAIL_NOT_VERIFIED: Email not yet verified (login requires verification: design assumption
+            A-02); ACCOUNT_SUSPENDED: Account suspended by an administrator'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '423':
+          description: 'ACCOUNT_LOCKED: 5 consecutive failures; locked for 15 minutes; Retry-After header set'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 'RATE_LIMITED: Too many requests from this client'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/logout:
+    post:
+      operationId: api_06
+      summary: Log out
+      tags:
+      - Authentication and platform
+      description: 'API-06. Requirements: FR-02. Use cases: UC-05. Access: Customer, Seller or Administrator. Validation:
+        None.'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: '{ message }; cookie cleared; token version incremented'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 'UNAUTHENTICATED: No valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'CSRF_INVALID: missing or wrong CSRF token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/me:
+    get:
+      operationId: api_07
+      summary: Get current user
+      tags:
+      - Authentication and platform
+      description: 'API-07. Requirements: FR-02, FR-29. Use cases: UC-05. Access: Customer, Seller or Administrator.
+        Validation: None.'
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Current user (id, name, email, roles, status)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: 'UNAUTHENTICATED: No valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/forgot-password:
+    post:
+      operationId: api_08
+      summary: Request password reset email
+      tags:
+      - Authentication and platform
+      description: 'API-08. Requirements: FR-03. Use cases: UC-14, UC-25. Access: None. Validation: email valid.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+              - email
+      security:
+      - csrfToken: []
+      responses:
+        '200':
+          description: '{ message }; always the same text'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 'RATE_LIMITED: Too many requests from this client'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'CSRF_INVALID: missing or wrong CSRF token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/reset-password:
+    post:
+      operationId: api_09
+      summary: Reset password
+      tags:
+      - Authentication and platform
+      description: 'API-09. Requirements: FR-03, VFR-04. Use cases: UC-14. Access: None. Validation: newPassword
+        8-72 chars; token 32-128 chars.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  minLength: 32
+                  maxLength: 128
+                newPassword:
+                  type: string
+                  minLength: 8
+                  maxLength: 72
+              required:
+              - token
+              - newPassword
+      security:
+      - csrfToken: []
+      responses:
+        '200':
+          description: '{ message }; token consumed; all sessions invalidated'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation; TOKEN_INVALID_OR_EXPIRED:
+            Token unknown, expired (30 minutes) or already used'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'CSRF_INVALID: missing or wrong CSRF token'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/profile:
+    get:
+      operationId: api_10
+      summary: Get own profile and addresses
+      tags:
+      - Profile and addresses
+      description: 'API-10. Requirements: FR-18. Use cases: UC-13. Access: Customer. Validation: None.'
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Profile with name, email, phone and addresses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          description: 'UNAUTHENTICATED: No session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: api_11
+      summary: Update profile
+      tags:
+      - Profile and addresses
+      description: 'API-11. Requirements: FR-18. Use cases: UC-13. Access: Customer. Validation: name 1-100 chars;
+        phone 7-15 digits; email cannot be changed.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                phone:
+                  type: string
+                  minLength: 7
+                  maxLength: 15
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/profile/addresses:
+    post:
+      operationId: api_12
+      summary: Add a saved address
+      tags:
+      - Profile and addresses
+      description: 'API-12. Requirements: FR-18, FR-11. Use cases: UC-13, UC-08. Access: Customer. Validation: fullName,
+        line1, city, state, postalCode, country, phone required; maximum 5 addresses per user.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  minLength: 0
+                  maxLength: 30
+                fullName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                line1:
+                  type: string
+                  minLength: 1
+                  maxLength: 150
+                line2:
+                  type: string
+                  minLength: 0
+                  maxLength: 150
+                city:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                state:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                postalCode:
+                  type: string
+                  minLength: 3
+                  maxLength: 12
+                country:
+                  type: string
+                  minLength: 2
+                  maxLength: 60
+                phone:
+                  type: string
+                  minLength: 7
+                  maxLength: 15
+                isDefault:
+                  type: boolean
+              required:
+              - fullName
+              - line1
+              - city
+              - state
+              - postalCode
+              - country
+              - phone
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Created address with id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'ADDRESS_LIMIT: Already 5 saved addresses'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/profile/addresses/{addressId}:
+    patch:
+      operationId: api_13
+      summary: Update a saved address
+      tags:
+      - Profile and addresses
+      description: 'API-13. Requirements: FR-18. Use cases: UC-13. Access: Customer. Validation: Same field rules
+        as creation, all optional.'
+      parameters:
+      - name: addressId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  minLength: 0
+                  maxLength: 30
+                fullName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                line1:
+                  type: string
+                  minLength: 1
+                  maxLength: 150
+                line2:
+                  type: string
+                  minLength: 0
+                  maxLength: 150
+                city:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                state:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                postalCode:
+                  type: string
+                  minLength: 3
+                  maxLength: 12
+                country:
+                  type: string
+                  minLength: 2
+                  maxLength: 60
+                phone:
+                  type: string
+                  minLength: 7
+                  maxLength: 15
+                isDefault:
+                  type: boolean
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Updated address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: api_14
+      summary: Delete a saved address
+      tags:
+      - Profile and addresses
+      description: 'API-14. Requirements: FR-18. Use cases: UC-13. Access: Customer. Validation: None.'
+      parameters:
+      - name: addressId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '204':
+          description: No content
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/books:
+    get:
+      operationId: api_15
+      summary: Browse, search, filter and sort books
+      tags:
+      - Catalog, categories and images
+      description: 'API-15. Requirements: FR-04, FR-05, FR-06, VFR-01, VFR-02. Use cases: UC-01, UC-02. Access:
+        None. Validation: page >= 1; q 1-100 chars, lower-cased and accent-stripped, matched as a substring of title,
+        author and ISBN through the indexed search fields; price bounds are non-negative integers (minor units);
+        rating 1-5.'
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      - name: category
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      - name: minPrice
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: maxPrice
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: minRating
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 30
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - newest
+          - price_asc
+          - price_desc
+          - rating_desc
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security: []
+      responses:
+        '200':
+          description: '{ items[20 max], page, pageSize: 20, totalItems, totalPages }; only approved listings'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/books/{bookId}:
+    get:
+      operationId: api_16
+      summary: Get book details
+      tags:
+      - Catalog, categories and images
+      description: 'API-16. Requirements: FR-07, VFR-01. Use cases: UC-03. Access: None. Validation: bookId is a
+        24-character hex id.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security: []
+      responses:
+        '200':
+          description: Book with title, author, ISBN, price, description, image URLs, stock status, average rating
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/books/{bookId}/reviews:
+    get:
+      operationId: api_17
+      summary: List reviews of a book
+      tags:
+      - Catalog, categories and images
+      description: 'API-17. Requirements: FR-07, FR-17. Use cases: UC-03, UC-12. Access: None. Validation: page
+        >= 1.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security: []
+      responses:
+        '200':
+          description: '{ items, page, totalItems, totalPages } newest first, 10 per page'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: api_33
+      summary: Rate and review a book
+      tags:
+      - Reviews
+      description: 'API-33. Requirements: FR-17. Use cases: UC-12. Access: Customer. Validation: rating integer
+        1-5; comment 0-2000 chars, stored as text and escaped on display.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  minLength: 0
+                  maxLength: 2000
+              required:
+              - rating
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Created review; book average rating updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'NOT_ELIGIBLE: Customer has no delivered order containing this book'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'ALREADY_REVIEWED: One review per customer per book'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/categories:
+    get:
+      operationId: api_18
+      summary: List categories
+      tags:
+      - Catalog, categories and images
+      description: 'API-18. Requirements: FR-06, FR-26. Use cases: UC-02, UC-23. Access: None. Validation: None.'
+      security: []
+      responses:
+        '200':
+          description: Array of { id, name }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryList'
+  /api/images/{imageId}:
+    get:
+      operationId: api_19
+      summary: Get a book image
+      tags:
+      - Catalog, categories and images
+      description: 'API-19. Requirements: FR-07, FR-20. Use cases: UC-03, UC-16. Access: None. Validation: imageId
+        is a 24-character hex id.'
+      parameters:
+      - name: imageId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security: []
+      responses:
+        '200':
+          description: Image bytes with Content-Type and long-lived cache headers
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/cart:
+    get:
+      operationId: api_20
+      summary: Get cart with totals
+      tags:
+      - Cart
+      description: 'API-20. Requirements: FR-08, FR-12. Use cases: UC-06, UC-08. Access: Customer. Validation: None.'
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Cart with items (current price, availability) and summary { subtotal, tax, shippingFee, total
+            } in minor units
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          description: 'UNAUTHENTICATED: No session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/cart/items:
+    post:
+      operationId: api_21
+      summary: Add a book to the cart
+      tags:
+      - Cart
+      description: 'API-21. Requirements: FR-08, FR-09. Use cases: UC-06. Access: Customer. Validation: quantity
+        1-50 and not above stock.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bookId:
+                  $ref: '#/components/schemas/ObjectId'
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+              required:
+              - bookId
+              - quantity
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Updated cart; quantity is added to an existing line
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'BOOK_NOT_FOUND: Book not approved or removed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'INSUFFICIENT_STOCK: Resulting quantity exceeds available stock (stock minus reserved)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/cart/items/{bookId}:
+    patch:
+      operationId: api_22
+      summary: Change quantity of a cart line
+      tags:
+      - Cart
+      description: 'API-22. Requirements: FR-08, FR-09. Use cases: UC-06. Access: Customer. Validation: quantity
+        1-50 and not above stock.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+              required:
+              - quantity
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'ITEM_NOT_IN_CART: Book is not in the cart'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'INSUFFICIENT_STOCK: Quantity exceeds available stock (stock minus reserved)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: api_23
+      summary: Remove a book from the cart
+      tags:
+      - Cart
+      description: 'API-23. Requirements: FR-08. Use cases: UC-06. Access: Customer. Validation: None.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '404':
+          description: 'ITEM_NOT_IN_CART: Book is not in the cart'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/wishlist:
+    get:
+      operationId: api_24
+      summary: Get wishlist
+      tags:
+      - Wishlist
+      description: 'API-24. Requirements: FR-10. Use cases: UC-07. Access: Customer. Validation: None.'
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Wishlist with book summaries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wishlist'
+        '401':
+          description: 'UNAUTHENTICATED: No session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/wishlist/items/{bookId}:
+    put:
+      operationId: api_25
+      summary: Add a book to the wishlist
+      tags:
+      - Wishlist
+      description: 'API-25. Requirements: FR-10. Use cases: UC-07. Access: Customer. Validation: bookId valid.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Wishlist (idempotent add)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wishlist'
+        '404':
+          description: 'BOOK_NOT_FOUND: Book not approved or removed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: api_26
+      summary: Remove a book from the wishlist
+      tags:
+      - Wishlist
+      description: 'API-26. Requirements: FR-10. Use cases: UC-07. Access: Customer. Validation: bookId valid.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/orders:
+    post:
+      operationId: api_27
+      summary: Reserve stock, create order and payment session from the cart
+      tags:
+      - Orders and payment
+      description: 'API-27. Requirements: FR-11, FR-12, FR-13, FR-30, VFR-08, VFR-14. Use cases: UC-08, UC-09. Access:
+        Customer. Validation: cart not empty; exactly one of addressId or shippingAddress; address fields as for
+        saved addresses; an earlier unpaid order of the same customer is closed and its reservation released.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addressId:
+                  $ref: '#/components/schemas/ObjectId'
+                shippingAddress:
+                  $ref: '#/components/schemas/AddressInput'
+                saveAddress:
+                  type: boolean
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: '{ order (status PendingPayment, reservationExpiresAt, summary), payment { gatewayOrderId,
+            amount, currency, clientConfig } }; the stock of every line is reserved atomically before the payment
+            session is created'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResult'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'INSUFFICIENT_STOCK: Available stock (stock minus reserved) of a cart line is too low; nothing
+            is reserved for any line'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: 'PAYMENT_GATEWAY_ERROR: Gateway could not create the payment; the reservation is released'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: api_30
+      summary: List own orders
+      tags:
+      - Orders and payment
+      description: 'API-30. Requirements: FR-15. Use cases: UC-10. Access: Customer. Validation: page >= 1.'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: '{ items, page, totalItems, totalPages } newest first, 10 per page; PendingPayment and PaymentFailed
+            orders are excluded'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/orders/{orderId}/payment/confirm:
+    post:
+      operationId: api_28
+      summary: Confirm payment and place the order
+      tags:
+      - Orders and payment
+      description: 'API-28. Requirements: FR-13, FR-14, FR-30, VFR-08, VFR-14. Use cases: UC-08, UC-09, UC-25. Access:
+        Customer. Validation: gatewayPaymentId present; order belongs to caller and is PendingPayment or already
+        Placed.'
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gatewayPaymentId:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                gatewaySignature:
+                  type: string
+                  minLength: 0
+                  maxLength: 256
+              required:
+              - gatewayPaymentId
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Order with status Placed; the reservation is finalised (stock decremented); calling again
+            returns the same confirmed order (idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation; PAYMENT_VERIFICATION_FAILED:
+            Gateway does not confirm the payment; the reservation is kept until it expires or the order is cancelled'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'ORDER_NOT_PAYABLE: Order was cancelled or has already failed and cannot be paid; ORDER_FAILED_REFUNDED:
+            Reservation had expired and the stock could not be reserved again; order failed and payment refunded'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: 'PAYMENT_GATEWAY_ERROR: Gateway unreachable'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/payments/webhook:
+    post:
+      operationId: api_29
+      summary: Gateway payment event callback
+      tags:
+      - Orders and payment
+      description: 'API-29. Requirements: FR-13, VFR-08. Use cases: UC-09. Access: External Payment Gateway. Validation:
+        Raw body signature verified with the shared webhook secret.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Provider-specific event payload; verified by signature before use
+      security:
+      - gatewaySignature: []
+      responses:
+        '200':
+          description: '{ received: true }; handles payment succeeded and payment failed events (a failed event
+            releases the reservation)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '401':
+          description: 'INVALID_SIGNATURE: Signature header does not match the raw body'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/orders/{orderId}:
+    get:
+      operationId: api_31
+      summary: Get one order
+      tags:
+      - Orders and payment
+      description: 'API-31. Requirements: FR-15. Use cases: UC-10. Access: Customer. Validation: orderId valid.'
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Order with items, per-item fulfilment status, summary, address snapshot, payment status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/orders/{orderId}/cancel:
+    post:
+      operationId: api_32
+      summary: Cancel an order (release reservation, or restore stock and refund)
+      tags:
+      - Orders and payment
+      description: 'API-32. Requirements: FR-16, VFR-14. Use cases: UC-11. Access: Customer. Validation: Order is
+        PendingPayment, Placed or Packed and no item is Shipped or Delivered.'
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: 'Placed or Packed order: status Cancelled, stock restored, refundStatus. Unpaid order: reservation
+            released, status PaymentFailed, no refund'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'ORDER_NOT_CANCELLABLE: An item is already Shipped or Delivered, or the order is already
+            closed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/applications:
+    post:
+      operationId: api_34
+      summary: Apply to become a seller
+      tags:
+      - Seller
+      description: 'API-34. Requirements: FR-19. Use cases: UC-15. Access: Customer. Validation: storeName 2-100
+        chars; description 0-1000 chars.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                storeName:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                description:
+                  type: string
+                  minLength: 0
+                  maxLength: 1000
+              required:
+              - storeName
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Application with status pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerApplication'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'APPLICATION_EXISTS: A pending application already exists; ALREADY_SELLER: Caller already
+            has the seller role'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/applications/me:
+    get:
+      operationId: api_35
+      summary: Get own application status
+      tags:
+      - Seller
+      description: 'API-35. Requirements: FR-19. Use cases: UC-15. Access: Customer. Validation: None.'
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Latest own application with status and reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerApplication'
+        '404':
+          description: 'NOT_FOUND: No application submitted'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/books:
+    get:
+      operationId: api_36
+      summary: List own listings
+      tags:
+      - Seller
+      description: 'API-36. Requirements: FR-20. Use cases: UC-16. Access: Seller. Validation: status in pending,
+        approved, rejected, removed; page >= 1.'
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+          - removed
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Own listings in every status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: api_37
+      summary: Create a listing
+      tags:
+      - Seller
+      description: 'API-37. Requirements: FR-20, FR-25. Use cases: UC-16. Access: Seller. Validation: title 1-200;
+        author 1-150; ISBN-10 or ISBN-13 with valid check digit; price positive integer (minor units); stock 0-100000;
+        at most 3 imageIds owned by the seller.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                author:
+                  type: string
+                  minLength: 1
+                  maxLength: 150
+                isbn:
+                  type: string
+                  pattern: ^(97[89])?\d{9}[\dXx]$
+                  description: ISBN-10 or ISBN-13 without hyphens; check digit validated
+                price:
+                  type: integer
+                  minimum: 1
+                description:
+                  type: string
+                  minLength: 0
+                  maxLength: 5000
+                categoryId:
+                  $ref: '#/components/schemas/ObjectId'
+                language:
+                  type: string
+                  minLength: 2
+                  maxLength: 30
+                stock:
+                  type: integer
+                  minimum: 0
+                  maximum: 100000
+                lowStockThreshold:
+                  type: integer
+                  minimum: 0
+                  maximum: 100000
+                imageIds:
+                  type: array
+                  maxItems: 3
+                  items:
+                    $ref: '#/components/schemas/ObjectId'
+              required:
+              - title
+              - author
+              - isbn
+              - price
+              - categoryId
+              - language
+              - stock
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Listing with status pending (not visible in the catalog until approved); search fields are
+            generated by the server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'ISBN_EXISTS_FOR_SELLER: Seller already has a listing with this ISBN'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/books/{bookId}:
+    patch:
+      operationId: api_38
+      summary: Edit a listing
+      tags:
+      - Seller
+      description: 'API-38. Requirements: FR-20. Use cases: UC-16. Access: Seller. Validation: Same rules as creation,
+        all optional; stock is changed only through the inventory endpoint.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                author:
+                  type: string
+                  minLength: 1
+                  maxLength: 150
+                price:
+                  type: integer
+                  minimum: 1
+                description:
+                  type: string
+                  minLength: 0
+                  maxLength: 5000
+                categoryId:
+                  $ref: '#/components/schemas/ObjectId'
+                language:
+                  type: string
+                  minLength: 2
+                  maxLength: 30
+                imageIds:
+                  type: array
+                  maxItems: 3
+                  items:
+                    $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Updated listing (approval status unchanged)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: api_39
+      summary: Remove a listing
+      tags:
+      - Seller
+      description: 'API-39. Requirements: FR-20. Use cases: UC-16. Access: Seller. Validation: None.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '204':
+          description: No content; listing status set to removed (history kept)
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/books/{bookId}/inventory:
+    patch:
+      operationId: api_40
+      summary: Update stock and low-stock threshold
+      tags:
+      - Seller
+      description: 'API-40. Requirements: FR-21, VFR-14. Use cases: UC-17. Access: Seller. Validation: stock 0-100000
+        and not below the units currently reserved; threshold 0-100000; at least one field.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stock:
+                  type: integer
+                  minimum: 0
+                  maximum: 100000
+                lowStockThreshold:
+                  type: integer
+                  minimum: 0
+                  maximum: 100000
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Listing with new stock, available units, stockStatus and threshold
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'STOCK_BELOW_RESERVED: New stock is lower than the units reserved by open checkouts'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/uploads/images:
+    post:
+      operationId: api_41
+      summary: Upload a book image
+      tags:
+      - Seller
+      description: 'API-41. Requirements: FR-20. Use cases: UC-16. Access: Seller. Validation: multipart field file;
+        JPEG or PNG; at most 2 MB; content type checked from file signature, not from the file name.'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+              - file
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: '{ imageId, url }'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageRef'
+        '400':
+          description: 'INVALID_FILE: Not a JPEG or PNG image'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: 'FILE_TOO_LARGE: File larger than 2 MB'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/orders:
+    get:
+      operationId: api_42
+      summary: List orders containing own items
+      tags:
+      - Seller
+      description: 'API-42. Requirements: FR-22. Use cases: UC-18. Access: Seller. Validation: status filter on
+        item status; page >= 1.'
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - Placed
+          - Packed
+          - Shipped
+          - Delivered
+          - Cancelled
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Orders containing the seller's items; response contains only the seller's own items plus
+            shipping name and address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/orders/{orderId}/items/{itemId}/status:
+    patch:
+      operationId: api_43
+      summary: Update fulfilment status of an own item
+      tags:
+      - Seller
+      description: 'API-43. Requirements: FR-22, FR-15. Use cases: UC-18. Access: Seller. Validation: status is
+        the next step after the current item status.'
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - Packed
+                  - Shipped
+                  - Delivered
+              required:
+              - status
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Order with updated item status and re-derived order status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'INVALID_STATUS_TRANSITION: Only Placed to Packed to Shipped to Delivered, one step at a
+            time'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/seller/reports/sales:
+    get:
+      operationId: api_44
+      summary: Sales report for a date range
+      tags:
+      - Seller
+      description: 'API-44. Requirements: FR-23. Use cases: UC-19. Access: Seller. Validation: from and to are ISO
+        dates; from <= to; range <= 366 days.'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: '{ from, to, orderCount, unitsSold, revenue, byBook[] } for the seller only'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesReport'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation; INVALID_DATE_RANGE:
+            from after to, or range longer than 366 days'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/notifications:
+    get:
+      operationId: api_45
+      summary: List own in-app alerts
+      tags:
+      - Notifications
+      description: 'API-45. Requirements: FR-21. Use cases: UC-17, UC-25. Access: Seller. Validation: page >= 1.'
+      parameters:
+      - name: unread
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: In-app alerts (low stock) newest first, 20 per page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/notifications/{notificationId}/read:
+    patch:
+      operationId: api_46
+      summary: Mark an alert as read
+      tags:
+      - Notifications
+      description: 'API-46. Requirements: FR-21. Use cases: UC-17. Access: Seller. Validation: notificationId valid.'
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Alert with readAt set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/users:
+    get:
+      operationId: api_47
+      summary: List users
+      tags:
+      - Administrator
+      description: 'API-47. Requirements: FR-24. Use cases: UC-20. Access: Administrator. Validation: page >= 1;
+        role and status from the allowed sets.'
+      parameters:
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - customer
+          - seller
+          - admin
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending_verification
+          - active
+          - suspended
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: '{ items (no password data), page, totalItems, totalPages }'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/users/{userId}/status:
+    patch:
+      operationId: api_48
+      summary: Suspend or reactivate a user
+      tags:
+      - Administrator
+      description: 'API-48. Requirements: FR-24. Use cases: UC-20. Access: Administrator. Validation: status is
+        active or suspended.'
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - suspended
+              required:
+              - status
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: User with new status; sessions of a suspended user invalidated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'CANNOT_MODIFY_SELF: Administrators cannot suspend their own account'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/seller-applications:
+    get:
+      operationId: api_49
+      summary: List seller applications
+      tags:
+      - Administrator
+      description: 'API-49. Requirements: FR-25. Use cases: UC-21. Access: Administrator. Validation: status in
+        allowed set; page >= 1.'
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Seller applications, default status pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/seller-applications/{applicationId}/approve:
+    post:
+      operationId: api_50
+      summary: Approve a seller application
+      tags:
+      - Administrator
+      description: 'API-50. Requirements: FR-19, FR-25. Use cases: UC-21. Access: Administrator. Validation: application
+        must be pending.'
+      parameters:
+      - name: applicationId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Application approved; applicant gains the seller role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerApplication'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'NOT_PENDING: Application already decided'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/seller-applications/{applicationId}/reject:
+    post:
+      operationId: api_51
+      summary: Reject a seller application
+      tags:
+      - Administrator
+      description: 'API-51. Requirements: FR-25. Use cases: UC-21. Access: Administrator. Validation: reason 1-500
+        chars.'
+      parameters:
+      - name: applicationId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              required:
+              - reason
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Application rejected with reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerApplication'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'NOT_PENDING: Application already decided'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/books:
+    get:
+      operationId: api_52
+      summary: List listings for approval
+      tags:
+      - Administrator
+      description: 'API-52. Requirements: FR-25. Use cases: UC-21. Access: Administrator. Validation: status in
+        allowed set; page >= 1.'
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+          - removed
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Listings by status, default pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/books/{bookId}/approve:
+    post:
+      operationId: api_53
+      summary: Approve a listing
+      tags:
+      - Administrator
+      description: 'API-53. Requirements: FR-25. Use cases: UC-21. Access: Administrator. Validation: listing must
+        be pending.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Listing approved and visible in the catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'NOT_PENDING: Listing already decided'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/books/{bookId}/reject:
+    post:
+      operationId: api_54
+      summary: Reject a listing
+      tags:
+      - Administrator
+      description: 'API-54. Requirements: FR-25. Use cases: UC-21. Access: Administrator. Validation: reason 1-500
+        chars.'
+      parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              required:
+              - reason
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Listing rejected with reason
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'NOT_PENDING: Listing already decided'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/categories:
+    post:
+      operationId: api_55
+      summary: Add a category
+      tags:
+      - Administrator
+      description: 'API-55. Requirements: FR-26. Use cases: UC-23. Access: Administrator. Validation: name 1-60
+        chars, unique ignoring case.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+              required:
+              - name
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'CATEGORY_EXISTS: Name already used (case-insensitive)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/categories/{categoryId}:
+    patch:
+      operationId: api_56
+      summary: Rename a category
+      tags:
+      - Administrator
+      description: 'API-56. Requirements: FR-26. Use cases: UC-23. Access: Administrator. Validation: name 1-60
+        chars, unique ignoring case.'
+      parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+              required:
+              - name
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: Renamed category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'CATEGORY_EXISTS: Name already used (case-insensitive)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: api_57
+      summary: Delete a category
+      tags:
+      - Administrator
+      description: 'API-57. Requirements: FR-26. Use cases: UC-23. Access: Administrator. Validation: category must
+        have no books.'
+      parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '204':
+          description: No content
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 'CATEGORY_IN_USE: Books still reference the category'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/reviews:
+    get:
+      operationId: api_58
+      summary: List reviews for moderation
+      tags:
+      - Administrator
+      description: 'API-58. Requirements: FR-27. Use cases: UC-22. Access: Administrator. Validation: page >= 1;
+        bookId valid id.'
+      parameters:
+      - name: bookId
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      - name: maxRating
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 5
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: All reviews for moderation, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewPage'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/reviews/{reviewId}:
+    delete:
+      operationId: api_59
+      summary: Remove a review
+      tags:
+      - Administrator
+      description: 'API-59. Requirements: FR-27. Use cases: UC-22. Access: Administrator. Validation: reviewId valid.'
+      parameters:
+      - name: reviewId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ObjectId'
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '204':
+          description: No content; book average rating recalculated
+        '404':
+          description: 'NOT_FOUND: Resource does not exist or is not visible to the caller'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/admin/reports/platform:
+    get:
+      operationId: api_60
+      summary: Platform report for a date range
+      tags:
+      - Administrator
+      description: 'API-60. Requirements: FR-28. Use cases: UC-24. Access: Administrator. Validation: from and to
+        are ISO dates; from <= to; range <= 366 days.'
+      parameters:
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: '{ from, to, orderCount, revenue, topBooks[10] }'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformReport'
+        '400':
+          description: 'VALIDATION_ERROR: Request body, query or path parameter fails validation; INVALID_DATE_RANGE:
+            from after to, or range longer than 366 days'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 'UNAUTHENTICATED: no valid session'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 'FORBIDDEN: role not allowed, or CSRF_INVALID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/health:
+    get:
+      operationId: api_61
+      summary: Health check used by the uptime monitor
+      tags:
+      - System
+      description: 'API-61. Requirements: VFR-09. Use cases: UC-01 to UC-25 (system-wide). Access: None. Validation:
+        None.'
+      security: []
+      responses:
+        '200':
+          description: '{ status: ok, db: up, uptimeSeconds, time }; 503 with db: down when the database does not
+            answer'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: 'UNHEALTHY: Database check failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    ObjectId:
+      type: string
+      pattern: ^[a-f0-9]{24}$
+      example: 65a1f0c2b4d3e8a9c1d2e3f4
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  issue:
+                    type: string
+          required:
+          - code
+          - message
+      required:
+      - error
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+    CsrfToken:
+      type: object
+      properties:
+        csrfToken:
+          type: string
+      required:
+      - csrfToken
+    AddressInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        phone:
+          type: string
+      required:
+      - fullName
+      - line1
+      - city
+      - state
+      - postalCode
+      - country
+      - phone
+    Address:
+      allOf:
+      - $ref: '#/components/schemas/AddressInput'
+      - type: object
+        properties:
+          id:
+            $ref: '#/components/schemas/ObjectId'
+          label:
+            type: string
+          isDefault:
+            type: boolean
+    User:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+            enum:
+            - customer
+            - seller
+            - admin
+        status:
+          type: string
+          enum:
+          - pending_verification
+          - active
+          - suspended
+      required:
+      - id
+      - name
+      - email
+      - roles
+      - status
+    Profile:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        addresses:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/Address'
+    Category:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        name:
+          type: string
+      required:
+      - id
+      - name
+    CategoryList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Category'
+    Book:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        sellerId:
+          $ref: '#/components/schemas/ObjectId'
+        title:
+          type: string
+        author:
+          type: string
+        isbn:
+          type: string
+        price: &id001
+          type: integer
+          description: Amount in minor currency units
+        description:
+          type: string
+        categoryId:
+          $ref: '#/components/schemas/ObjectId'
+        language:
+          type: string
+        imageUrls:
+          type: array
+          items:
+            type: string
+        stock:
+          type: integer
+          minimum: 0
+        stockStatus:
+          type: string
+          enum:
+          - In stock
+          - Out of stock
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+          - removed
+        avgRating:
+          type: number
+        reviewCount:
+          type: integer
+      required:
+      - id
+      - title
+      - author
+      - isbn
+      - price
+      - stockStatus
+      - avgRating
+    Page:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+    Review:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        bookId:
+          $ref: '#/components/schemas/ObjectId'
+        userName:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - rating
+    Summary:
+      type: object
+      properties:
+        subtotal: *id001
+        tax: *id001
+        shippingFee: *id001
+        total: *id001
+      required:
+      - subtotal
+      - tax
+      - shippingFee
+      - total
+    CartItem:
+      type: object
+      properties:
+        bookId:
+          $ref: '#/components/schemas/ObjectId'
+        title:
+          type: string
+        unitPrice: *id001
+        quantity:
+          type: integer
+        available:
+          type: boolean
+        lineTotal: *id001
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        summary:
+          $ref: '#/components/schemas/Summary'
+      required:
+      - items
+      - summary
+    Wishlist:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Book'
+    OrderItem:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        bookId:
+          $ref: '#/components/schemas/ObjectId'
+        title:
+          type: string
+        isbn:
+          type: string
+        unitPrice: *id001
+        quantity:
+          type: integer
+        lineTotal: *id001
+        fulfilmentStatus:
+          type: string
+          enum:
+          - Placed
+          - Packed
+          - Shipped
+          - Delivered
+          - Cancelled
+    Order:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        orderNumber:
+          type: string
+        status:
+          type: string
+          enum:
+          - PendingPayment
+          - PaymentFailed
+          - Placed
+          - Packed
+          - Shipped
+          - Delivered
+          - Cancelled
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        summary:
+          $ref: '#/components/schemas/Summary'
+        shippingAddress:
+          $ref: '#/components/schemas/AddressInput'
+        paymentStatus:
+          type: string
+        refundStatus:
+          type: string
+        placedAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - status
+      - items
+      - summary
+    PaymentSession:
+      type: object
+      properties:
+        gatewayOrderId:
+          type: string
+        amount: *id001
+        currency:
+          type: string
+        clientConfig:
+          type: object
+          description: Provider-specific values the gateway form needs; never secrets
+      required:
+      - gatewayOrderId
+      - amount
+      - currency
+    CheckoutResult:
+      type: object
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        payment:
+          $ref: '#/components/schemas/PaymentSession'
+      required:
+      - order
+      - payment
+    SellerApplication:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        userId:
+          $ref: '#/components/schemas/ObjectId'
+        storeName:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+        rejectionReason:
+          type: string
+      required:
+      - id
+      - storeName
+      - status
+    ImageRef:
+      type: object
+      properties:
+        imageId:
+          $ref: '#/components/schemas/ObjectId'
+        url:
+          type: string
+      required:
+      - imageId
+      - url
+    SalesReport:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        orderCount:
+          type: integer
+        unitsSold:
+          type: integer
+        revenue: *id001
+        byBook:
+          type: array
+          items:
+            type: object
+            properties:
+              bookId:
+                $ref: '#/components/schemas/ObjectId'
+              title:
+                type: string
+              units:
+                type: integer
+              revenue: *id001
+    PlatformReport:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        orderCount:
+          type: integer
+        revenue: *id001
+        topBooks:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            properties:
+              bookId:
+                $ref: '#/components/schemas/ObjectId'
+              title:
+                type: string
+              units:
+                type: integer
+    Notification:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ObjectId'
+        type:
+          type: string
+        subject:
+          type: string
+        payload:
+          type: object
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+        db:
+          type: string
+          enum:
+          - up
+          - down
+        uptimeSeconds:
+          type: integer
+        time:
+          type: string
+          format: date-time
+      required:
+      - status
+      - db
+    BookPage:
+      allOf:
+      - $ref: '#/components/schemas/Page'
+      - type: object
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/Book'
+    ReviewPage:
+      allOf:
+      - $ref: '#/components/schemas/Page'
+      - type: object
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/Review'
+    OrderPage:
+      allOf:
+      - $ref: '#/components/schemas/Page'
+      - type: object
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/Order'
+    ApplicationPage:
+      allOf:
+      - $ref: '#/components/schemas/Page'
+      - type: object
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/SellerApplication'
+    NotificationPage:
+      allOf:
+      - $ref: '#/components/schemas/Page'
+      - type: object
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/Notification'
+    UserPage:
+      allOf:
+      - $ref: '#/components/schemas/Page'
+      - type: object
+        properties:
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+      description: HttpOnly, Secure, SameSite=Lax cookie holding a signed token that expires after 60 minutes
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+    gatewaySignature:
+      type: apiKey
+      in: header
+      name: X-Gateway-Signature

@@ -1,0 +1,45 @@
+@startmindmap
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam roundcorner 6
+skinparam dpi 110
+title Online Bookstore: Screen Navigation Map
+* Online Bookstore
+** Guest
+*** S-01 Catalog (browse, search, filter)
+*** S-02 Book details
+*** S-03 Register
+*** S-04 Verify email
+*** S-05 Login
+*** S-06 Forgot password
+*** S-07 Reset password
+** Customer
+*** S-08 Cart
+*** S-09 Wishlist
+*** S-10 Checkout (address and order summary)
+*** S-11 Payment (shows time left on the stock reservation)
+*** S-12 Order confirmation
+*** S-13 My orders
+*** S-14 Order details and cancel
+*** S-15 Review form (dialog on S-02 and S-14)
+*** S-16 Profile and addresses
+*** S-17 Become a seller
+left side
+** Seller
+*** S-18 Seller dashboard (home and alerts)
+*** S-19 Seller listings
+*** S-20 Listing form (create and edit)
+*** S-21 Inventory
+*** S-22 Seller orders
+*** S-23 Sales report
+** Administrator
+*** S-24 Administrator dashboard
+*** S-25 User management
+*** S-26 Seller and listing approvals
+*** S-27 Review moderation
+*** S-28 Category management
+*** S-29 Platform reports
+** All users
+*** S-30 Access denied / page not found
+@endmindmap

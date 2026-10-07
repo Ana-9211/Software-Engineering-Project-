@@ -1,0 +1,110 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Domain Classes 1 of 3: Accounts and Communication
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam nodesep 40
+skinparam ranksep 50
+class User {
+  id
+  name
+  email
+  passwordHash
+  roles : Role[]
+  status : UserStatus
+  phone
+  failedLoginCount
+  lockUntil
+  tokenVersion
+  +hasRole(role) : boolean
+  +isLocked() : boolean
+}
+class Address <<embedded, max 5>> {
+  label
+  fullName
+  line1
+  line2
+  city
+  state
+  postalCode
+  country
+  phone
+  isDefault
+}
+class SellerProfile <<embedded>> {
+  storeName
+  description
+  approvedAt
+}
+class SellerApplication {
+  id
+  storeName
+  description
+  status
+  rejectionReason
+  decidedAt
+}
+class AuthToken {
+  id
+  type
+  tokenHash
+  expiresAt
+  usedAt
+}
+class Notification {
+  id
+  channel
+  type
+  subject
+  status
+  attempts
+  readAt
+  +markRead()
+}
+User "1" *-- "0..5" Address : saved addresses
+User "1" *-- "0..1" SellerProfile : set when approved as seller
+User "1" -- "0..*" SellerApplication : applies
+User "1" -- "0..*" AuthToken : verification, reset
+User "1" -- "0..*" Notification : receives
+note bottom of User
+  roles is a list (customer, seller, admin).
+  An approved seller keeps the customer role.
+end note
+@enduml

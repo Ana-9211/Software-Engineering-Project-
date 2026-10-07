@@ -1,0 +1,58 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-05 Checkout, stock reservation and payment session (UC-08, UC-09)
+autonumber
+participant "React SPA" as SPA
+participant "OrderService\n(BM-06)" as ORD
+participant "InventoryService\n(BM-10)" as INV
+participant "PaymentService\n(BM-07)" as PAY
+participant "Payment Gateway\n(external)" as GW
+database "MongoDB" as DB
+SPA -> ORD : POST /api/orders\n[CSRF, auth, role customer, validation]
+ORD -> DB : load cart, books, address
+ORD -> INV : reserve(items) in one transaction
+INV -> DB : reserved + qty on every line\nwhere stock - reserved >= qty
+alt any line cannot be reserved
+  INV --> ORD : INSUFFICIENT_STOCK (nothing reserved)
+  ORD --> SPA : 409 INSUFFICIENT_STOCK
+else all lines reserved
+  ORD -> DB : save order PendingPayment\n(snapshots, reservation expiry)
+  ORD -> PAY : createPaymentSession(order)
+  PAY -> GW : create payment for the total
+  alt gateway error
+    ORD -> INV : releaseReservation(items)
+    ORD --> SPA : 502 PAYMENT_GATEWAY_ERROR
+  else payment created
+    PAY -> DB : save payment (created)
+    ORD --> SPA : 201 order, payment,\nreservationExpiresAt
+    SPA -> GW : customer pays in the hosted form
+  end
+end
+note over GW : Card data goes only to the gateway (VFR-08)
+@enduml

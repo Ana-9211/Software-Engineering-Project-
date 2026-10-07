@@ -1,0 +1,60 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-09 Seller listing creation and administrator approval (UC-16, UC-21)
+autonumber
+participant "React SPA" as SPA
+participant "MediaService\n(BM-14)" as MED
+participant "BookManagementService\n(BM-16)" as BKM
+participant "CatalogService\n(BM-03)" as CAT
+participant "AdminService\n(BM-11)" as ADM
+SPA -> MED : POST /api/seller/uploads/images (Seller)\n[file at most 2 MB, JPEG or PNG signature]
+alt invalid file
+  MED --> SPA : 400 INVALID_FILE or 413 FILE_TOO_LARGE
+else valid file
+  MED --> SPA : 201 imageId (stored in GridFS)
+end
+SPA -> BKM : POST /api/seller/books\n[CSRF, auth, role seller, validation]
+BKM -> MED : assertImagesOwned(sellerId, imageIds)
+BKM -> CAT : buildSearchFields(title, author, isbn)
+alt same ISBN already listed by this seller
+  BKM --> SPA : 409 ISBN_EXISTS_FOR_SELLER
+else saved with status pending
+  BKM --> SPA : 201 listing pending
+end
+SPA -> ADM : GET /api/admin/books (Administrator)
+ADM -> BKM : listPendingListings
+ADM --> SPA : 200 pending listings
+SPA -> ADM : POST /api/admin/books/:bookId/approve
+ADM -> BKM : decideListing(adminId, bookId, approve)
+alt not pending
+  BKM --> SPA : 409 NOT_PENDING
+else pending
+  BKM --> SPA : 200 approved (now in GET /api/books)
+end
+@enduml

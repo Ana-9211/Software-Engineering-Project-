@@ -1,0 +1,124 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 105
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Service-Layer Classes: Checkout, Reservation, Payment and Notification
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam nodesep 30
+skinparam ranksep 40
+class OrderController {
+  +createOrder()
+  +confirmPayment()
+  +cancelOrder()
+}
+class PaymentController {
+  +handleWebhook()
+}
+class OrderService {
+  +createOrder(userId, addressInput)
+  +confirmPayment(userId, orderId, ref)
+  +handleGatewayEvent(rawBody, signature)
+  +cancelOrder(userId, orderId)
+  +releaseExpiredReservations()
+}
+class ReservationSweeper {
+  +run()
+}
+class OrderStatusPolicy {
+  +deriveOrderStatus(items)
+  +canCancel(order)
+}
+class CartService {
+  +getValidatedCart(userId)
+  +computeSummary(items)
+  +clear(userId, session)
+}
+class InventoryService {
+  +checkAvailability(items)
+  +reserve(items, session)
+  +finalizeReservation(items, session)
+  +releaseReservation(items, session)
+  +restore(items, session)
+}
+class PaymentService {
+  +createPaymentSession(order)
+  +verifyPayment(order, ref)
+  +verifyWebhook(rawBody, signature)
+  +refund(payment, amount)
+}
+interface PaymentGateway {
+  +createPayment()
+  +verifyPayment()
+  +verifyWebhook()
+  +refund()
+}
+class GatewayProviderAdapter <<provider TBD>>
+class FakeGateway <<tests>>
+class NotificationService {
+  +sendOrderConfirmation(order, user)
+  +notifyLowStock(book)
+  +retryFailed()
+}
+interface MailSender {
+  +send(message)
+}
+class SmtpMailSender <<provider TBD>>
+class ConsoleMailSender <<tests>>
+class OrderRepository
+class PaymentRepository
+class BookRepository
+OrderController --> OrderService
+PaymentController --> OrderService
+ReservationSweeper --> OrderService
+OrderService --> OrderStatusPolicy
+OrderService --> CartService
+OrderService --> InventoryService
+OrderService --> PaymentService
+OrderService --> NotificationService
+OrderService --> OrderRepository
+PaymentService --> PaymentGateway
+PaymentService --> PaymentRepository
+PaymentGateway <|.. GatewayProviderAdapter
+PaymentGateway <|.. FakeGateway
+InventoryService --> BookRepository
+InventoryService --> NotificationService
+NotificationService --> MailSender
+MailSender <|.. SmtpMailSender
+MailSender <|.. ConsoleMailSender
+@enduml

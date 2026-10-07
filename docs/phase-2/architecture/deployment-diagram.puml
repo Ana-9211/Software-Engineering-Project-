@@ -1,0 +1,65 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 120
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Online Bookstore: Deployment Diagram
+left to right direction
+node "User device" {
+  artifact "Web browser" as BR
+}
+node "Application host (provider TBD)\nNode.js runtime\nHTTPS terminated by the host" as APP {
+  artifact "Express API (/api/*)\n+ reservation sweeper" as API
+  artifact "React build (static files)" as WEB
+}
+database "MongoDB Atlas (tier TBD)\nreplica set, daily backup\nincludes GridFS images" as DB
+cloud "Payment Gateway\n(sandbox / test mode)" as PG
+cloud "Email Service\n(provider TBD)" as ES
+cloud "Uptime monitor\n(tool TBD)" as UM
+BR --> APP : HTTPS 443\nSPA files and /api calls
+APP --> DB : MongoDB protocol over TLS
+APP --> PG : HTTPS (create, verify, refund)
+PG ..> APP : HTTPS webhook (signed)
+APP --> ES : SMTP over TLS or HTTPS
+UM --> APP : HTTPS GET /api/health\nevery 5 min or less
+BR ..> PG : HTTPS hosted payment form
+note bottom of APP
+  One service serves both the API and the React build,
+  so the browser sees a single origin (no CORS,
+  first-party cookies) and one keep-alive target.
+end note
+@enduml

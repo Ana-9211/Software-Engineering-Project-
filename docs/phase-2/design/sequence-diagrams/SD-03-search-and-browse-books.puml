@@ -1,0 +1,55 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-03 Search and browse books (UC-01, UC-02)
+autonumber
+actor "Guest / Customer" as U
+participant "React SPA" as SPA
+participant "CatalogService\n(BM-03)" as CAT
+participant "MediaService\n(BM-14)" as MED
+database "MongoDB" as DB
+U -> SPA : type search text, choose filters
+SPA -> CAT : GET /api/books\n[validate query]
+alt invalid query
+  CAT --> SPA : 400 VALIDATION_ERROR
+else valid query
+  CAT -> CAT : normalise text, build\nfilter and sort
+  CAT -> DB : find approved books\n(search and filter indexes), limit 20
+  CAT -> DB : count matching books
+  CAT --> SPA : 200 page of 20 books
+  SPA -> MED : GET /api/images/:imageId
+  MED --> SPA : 200 image bytes (cacheable)
+end
+U -> SPA : open a book
+SPA -> CAT : GET /api/books/:bookId
+alt not found or not approved
+  CAT --> SPA : 404 NOT_FOUND
+else found
+  CAT --> SPA : 200 book details
+end
+@enduml

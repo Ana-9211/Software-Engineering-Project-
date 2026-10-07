@@ -1,0 +1,104 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Domain Classes 3 of 3: Cart, Wishlist, Orders and Payment
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam nodesep 40
+skinparam ranksep 50
+class User
+class Book
+class Cart {
+  id
+  updatedAt
+  +computeSummary() : Summary
+}
+class CartItem <<embedded>> {
+  quantity
+}
+class Wishlist {
+  id
+}
+class Order {
+  id
+  orderNumber
+  subtotal
+  tax
+  shippingFee
+  total
+  status : OrderStatus
+  reservationExpiresAt
+  failureReason
+  placedAt
+  cancelledAt
+  +deriveStatus() : OrderStatus
+  +canCancel() : boolean
+  +isReservationExpired() : boolean
+}
+class OrderItem <<embedded>> {
+  titleSnapshot
+  isbnSnapshot
+  unitPrice
+  quantity
+  lineTotal
+  fulfilmentStatus : FulfilmentStatus
+}
+class ShippingAddress <<snapshot of Address>>
+class Payment {
+  id
+  gateway
+  gatewayOrderId
+  gatewayPaymentId
+  amount
+  currency
+  status : PaymentStatus
+  +isRefundable() : boolean
+}
+User "1" -- "0..1" Cart : owns
+Cart "1" *-- "0..*" CartItem
+CartItem "0..*" --> "1" Book
+User "1" -- "0..1" Wishlist : owns
+Wishlist "0..*" --> "0..*" Book
+User "1" -- "0..*" Order : places
+Order "1" *-- "1..*" OrderItem
+OrderItem "0..*" --> "1" Book
+OrderItem "0..*" --> "1" User : seller
+Order "1" *-- "1" ShippingAddress
+Order "1" -- "1" Payment : paid by
+@enduml

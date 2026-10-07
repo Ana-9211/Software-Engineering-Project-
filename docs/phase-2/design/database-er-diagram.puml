@@ -1,0 +1,72 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Database ER Overview (all collections and relationships)
+hide circle
+hide members
+skinparam nodesep 40
+skinparam ranksep 60
+entity "users" as users
+entity "auth_tokens" as auth_tokens
+entity "categories" as categories
+entity "books" as books
+entity "carts" as carts
+entity "wishlists" as wishlists
+entity "orders" as orders
+entity "payments" as payments
+entity "reviews" as reviews
+entity "seller_applications" as seller_applications
+entity "notifications" as notifications
+entity "fs.files / fs.chunks\n(GridFS)" as fsfiles
+users ||--o{ auth_tokens
+users ||--o{ books : sells (sellerId)
+categories ||--o{ books : categoryId
+users ||--o| carts
+users ||--o| wishlists
+users ||--o{ orders : places (userId)
+orders ||--|| payments : paymentId
+books ||--o{ reviews : about
+users ||--o{ reviews : writes
+users ||--o{ seller_applications : applies
+users ||--o{ notifications
+books }o..o{ fsfiles : imageIds
+wishlists }o..o{ books : bookIds
+carts }o..o{ books : items.bookId
+orders }o..o{ books : items.bookId (snapshot)
+@enduml

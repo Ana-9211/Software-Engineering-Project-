@@ -1,0 +1,67 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 130
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title AD-03 Order fulfilment and cancellation (UC-18, UC-10, UC-11)
+|System|
+start
+:Order Placed, every item Placed;
+repeat
+  |Customer|
+  if (Cancel requested?) then (yes)
+    |System|
+    if (Any item Shipped or Delivered?) then (yes)
+      :Reject cancellation;
+    else (no)
+      :Restore stock, mark items and order Cancelled;
+      :Refund payment;
+      stop
+    endif
+  else (no)
+  endif
+  |Seller|
+  :Update own item to the next step\nPacked, then Shipped, then Delivered;
+  |System|
+  :Derive order status from item statuses\n(lowest status held by all items);
+repeat while (Some item not Delivered?) is (yes)
+->no;
+:Order status Delivered;
+|Customer|
+:May now review the books (UC-12);
+stop
+@enduml
