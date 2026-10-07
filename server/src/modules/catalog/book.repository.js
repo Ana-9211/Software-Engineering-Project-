@@ -9,8 +9,8 @@ const HIDE_SEARCH = '-titleLower -authorLower -searchText -searchTrigrams';
 const SORTS = {
   newest: { createdAt: -1, _id: -1 },
   price_asc: { price: 1, _id: 1 },
-  price_desc: { price: -1, _id: 1 },
-  rating_desc: { avgRating: -1, createdAt: -1, _id: 1 },
+  price_desc: { price: -1, _id: -1 },
+  rating_desc: { avgRating: -1, createdAt: -1, _id: -1 },
 };
 
 // BookRepository: used by Catalog (BM-03), Book Management (BM-16) and Inventory (BM-10).

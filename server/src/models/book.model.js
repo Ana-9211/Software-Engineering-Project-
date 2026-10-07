@@ -30,10 +30,12 @@ const bookSchema = new mongoose.Schema(
 );
 
 bookSchema.index({ sellerId: 1, isbn: 1 }, { unique: true });
-bookSchema.index({ status: 1, categoryId: 1, price: 1 });
-bookSchema.index({ status: 1, price: 1 });
-bookSchema.index({ status: 1, createdAt: -1 });
-bookSchema.index({ status: 1, avgRating: -1 });
+// The sort indexes end with _id so that the stable sort order used for paging (ties broken by _id) is also
+// answered from the index. This only extends the indexes of SDD 8.2; without it MongoDB sorts all matches in memory.
+bookSchema.index({ status: 1, categoryId: 1, price: 1, _id: 1 });
+bookSchema.index({ status: 1, price: 1, _id: 1 });
+bookSchema.index({ status: 1, createdAt: -1, _id: -1 });
+bookSchema.index({ status: 1, avgRating: -1, createdAt: -1, _id: -1 });
 bookSchema.index({ status: 1, searchTrigrams: 1 });
 bookSchema.index({ status: 1, titleLower: 1 });
 bookSchema.index({ status: 1, authorLower: 1 });
