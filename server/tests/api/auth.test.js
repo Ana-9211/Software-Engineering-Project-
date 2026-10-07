@@ -29,6 +29,16 @@ describe('registration and email verification (FR-01, UC-04)', () => {
     expect(login1.body.passwordHash).toBeUndefined();
   });
 
+  test('accepts any well-formed email address, including internal domains, and refuses malformed ones', async () => {
+    const api = client(ctx.app);
+    const ok = await api.post('/api/auth/register', { name: 'Local', email: `person${Date.now()}@bookstore.local`, password: PASSWORD });
+    expect(ok.status).toBe(201);
+    for (const email of ['plainaddress', '@no-local-part.com', 'two@@example.com', 'spaces in@example.com', 'a@b']) {
+      const res = await api.post('/api/auth/register', { name: 'Bad', email, password: PASSWORD });
+      expect(res.status).toBe(400);
+    }
+  });
+
   test('stores only a bcrypt hash and never the password or the token', async () => {
     const email = uniqueEmail('hash');
     await client(ctx.app).post('/api/auth/register', { name: 'Hash', email, password: PASSWORD });

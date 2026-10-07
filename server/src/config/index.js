@@ -1,5 +1,6 @@
 // Only this file reads environment variables (SDD section 3, "Configuration").
-require('dotenv').config({ quiet: true });
+// a local .env file never changes the behaviour of the automated tests
+if (process.env.NODE_ENV !== 'test') require('dotenv').config({ quiet: true });
 
 function build(env = process.env) {
   const nodeEnv = env.NODE_ENV || 'development';

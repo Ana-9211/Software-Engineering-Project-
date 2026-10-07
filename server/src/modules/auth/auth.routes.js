@@ -6,7 +6,8 @@ const password = Joi.string()
   .min(8)
   .max(72)
   .custom((value, helpers) => (Buffer.byteLength(value, 'utf8') > 72 ? helpers.error('string.max', { limit: 72 }) : value));
-const email = Joi.string().trim().email().max(254);
+// the format is checked; the list of public top-level domains is not (internal domains such as .local are allowed)
+const email = Joi.string().trim().email({ tlds: { allow: false } }).max(254);
 const oneTimeToken = Joi.string().min(32).max(128);
 
 // API-01 to API-09
