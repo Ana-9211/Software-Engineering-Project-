@@ -6,6 +6,9 @@ const { createApp } = require('./app');
 async function main() {
   await connect(config.mongodbUri);
   const { app, container } = createApp();
+  if (config.isProd && (config.payment.provider === 'fake' || ['console', 'memory'].includes(config.mail.provider))) {
+    logger.warn('production is running with the fake payment gateway or the console mailer: no real payment or email provider is configured');
+  }
 
   // reservation sweeper (I-27): once at start-up and then every minute
   const sweep = () =>

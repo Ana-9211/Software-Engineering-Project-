@@ -22,19 +22,46 @@ Other databases: set `MONGODB_URI` to any replica set (Docker image `mongo --rep
 
 Demo accounts (password `Password123!`): `seller@bookstore.local` (customer and seller), `customer@bookstore.local`. The email provider is TBD, so the console mailer prints emails, including verification and reset links, to the server console; nothing is delivered. The payment provider is TBD, so the payment page uses a clearly labelled test gateway.
 
-Checks: `npm test` (server, 510 tests), `npm run test:client` (23 tests), `npm run lint`, `node e2e/e2e.mjs` (browser walkthrough, needs the server running and Edge or Chrome; see the header of that file).
+Checks: `npm test` (server, 516 tests), `npm run test:client` (23 tests), `npm run lint`, `node e2e/e2e.mjs` (browser walkthrough, needs the server running and Edge or Chrome; see the header of that file).
 
 ## 2. Structure
 
 ```
 server/src   config, middleware (authGuard, requireRole, validate, csrfProtection, sanitize, rateLimiter,
              errorHandler, requestLogger, helmetConfig), models (11 collections), db, adapters (payment, mail),
-             modules/<module> (routes, controller, service, repository), container.js (wiring), app.js, server.js
+             modules/<module> (see the table below), container.js (wiring), app.js, server.js
 server/scripts  dev-db, seed-admin, seed-demo-data, validate-openapi, bench-search
 server/tests    unit/ and api/ (Jest, supertest, in-memory MongoDB replica set)
 client/src      api (ApiClient, endpoints), auth (AuthContext, guards), components, modules (per FM), styles.css
 e2e/            browser walkthrough (playwright-core, axe-core)
 ```
+
+Layout of `server/src/modules`. The layers are `routes` (HTTP, validation, role check), `service` (rules) and `repository` (database access). The Phase 2 layout lists a controller and a repository for every module; the code does **not** follow that for every module, so the table shows what exists:
+
+| Module | routes | controller | service | repository | Notes |
+|---|---|---|---|---|---|
+| auth | yes | yes | yes (`auth`, `token`, `password`) | `authToken.repository.js` | |
+| user | yes | yes | yes | yes | |
+| catalog | yes | no | yes | `book.repository.js`, `category.repository.js` | `book.repository.js` is shared by catalog, book-management and inventory (Phase 2 names a BookRepository for each); `search.js` holds the search rules |
+| cart | yes | no | yes | yes | |
+| wishlist | yes | no | yes | yes | |
+| order | yes | no | yes | yes | `orderStatusPolicy.js` |
+| payment | yes (webhook) | no | yes | yes | provider code is in `adapters/payment` |
+| review | yes | no | yes | yes | |
+| seller | yes | no | yes | `sellerApplication.repository.js` | fulfilment calls the order service |
+| notification | yes | no | yes | yes | `emailTemplates.js`; provider code is in `adapters/mail` |
+| book-management | yes | no | yes | uses catalog `book.repository.js` | |
+| inventory | yes | no | yes | uses catalog `book.repository.js` | has no controller of its own, as in Phase 2 |
+| admin | yes | no | yes | none | calls other services only |
+| reporting | yes | no | yes | uses `order.repository.js` | |
+| media | yes | no | yes | none | see deviation below |
+| platform | yes (health) | no | none | none | the cross-cutting middleware is in `server/src/middleware` |
+
+In modules without a controller file the handler functions sit in `*.routes.js` and only call the service (no rules in them). Deviations from the Phase 2 layering convention (services reach the database only through repositories, I-03), which Phase 2 was not edited to hide:
+
+- **media** (`media.service.js`) talks to GridFS through the Mongoose connection directly. GridFS is not a Mongoose model, and Phase 2 8.6 puts all image storage behind this service (`saveImage`, `streamImage`), so the storage stays hidden behind one boundary, but it is not a separate repository file.
+- **platform** (`health.routes.js`) pings the database connection directly because that is the whole purpose of the health check.
+- The wishlist service used the Mongoose model directly in the first Phase 3 version; it now has a `wishlist.repository.js` like the other modules.
 
 ## 3. Module and screen coverage
 
@@ -124,10 +151,11 @@ These fill gaps without changing Phase 1 or the approved design. Items marked **
 6. **Low-stock alert (D-12, I-13).** "Once per crossing" is implemented as: one unread low-stock alert per book; a new one is created only after the seller has read the previous one. Alerts are evaluated when stock is set, when a listing is created and when a sale finalises.
 7. **Late payment (D-06).** If the reservation expired and the stock is gone, the payment is refunded and the order stays `PaymentFailed` with `failureReason = stock_unavailable_refunded`; the API answers 409 `ORDER_FAILED_REFUNDED`.
 8. **Test gateway.** `clientConfig` of the fake gateway contains a ready "success" and "failure" payment so the browser can simulate the hosted payment form. It exists only in `adapters/payment/fakeGateway.js`; a real provider adapter replaces it by implementing the same four methods.
-9. **Seller order listing.** `GET /api/seller/orders` returns only the seller's own items plus shipping name and address; unpaid orders are never shown.
+9. **Seller order views (API-42, API-43).** They return only the seller's own items plus shipping name and address; unpaid orders are never shown. The OpenAPI `Order` schema requires a `summary`, so each seller response carries a `summary` built from that seller's own items only: `subtotal` is the sum of the seller's lines, `tax` uses the same rate and rounding as the customer order, `shippingFee` is 0 because the flat fee belongs to the whole order and is not split between sellers, and `total` is their sum. It never contains another seller's amounts, the order total or the shipping fee; tests check this with two sellers in one order.
 10. **ISBN.** Stored without hyphens (digits, final X for ISBN-10). The unique index `{sellerId, isbn}` also covers removed listings, so a removed listing's ISBN cannot be reused by the same seller.
 11. **Currency and prices.** Defaults `INR`, 5 % tax, flat 49.00 shipping (A-03, TBD). All are environment variables.
 12. **Email address check.** The format is validated but the list of public top-level domains is not, so internal domains such as `.local` work.
+13. **Production configuration guard.** With `NODE_ENV=production` the server refuses to start unless `PAYMENT_PROVIDER` and `MAIL_PROVIDER` are set explicitly (besides the secrets and the database URI), so the fake gateway and the console mailer can no longer be picked up by accident. In development and test they remain the defaults. The course demonstration may still name them explicitly (`PAYMENT_PROVIDER=fake`, `MAIL_PROVIDER=console`); the server then logs a warning at start-up. No real payment or email provider exists yet.
 
 ## 6. Test evidence (executed)
 
@@ -135,8 +163,8 @@ Environment: one Windows 11 laptop, Node 24.11, MongoDB 7.0.24 replica set (mong
 
 | Check | Command | Result |
 |---|---|---|
-| Server tests | `npm test` | 12 suites, 510 tests passed, 0 failed |
-| Server coverage | `npm run test:coverage -w server` | statements 94.19 %, branches 80.04 %, functions 95.55 %, lines 96.19 % (VFR-13 asks for 70 % lines) |
+| Server tests | `npm test` | 12 suites, 516 tests passed, 0 failed |
+| Server coverage | `npm run test:coverage -w server` | statements 94.41 %, branches 80.31 %, functions 95.96 %, lines 96.43 % (VFR-13 asks for 70 % lines) |
 | Client tests | `npm run test:client` | 1 file, 23 tests passed |
 | Lint | `npm run lint` | 0 errors, 0 warnings |
 | Browser walkthrough | `node e2e/e2e.mjs` | 41 of 41 steps passed (Microsoft Edge only, real server and database) |
@@ -166,6 +194,7 @@ These were not run, so there is no result for them: **OWASP ZAP baseline scan, L
 - No real payment or email provider, hosting, or HTTPS (all TBD in Phase 2).
 - **Payment page after a fresh visit.** The payment session (`clientConfig`) is returned only by `POST /api/orders` (API-27). `GET /api/orders/:orderId` (API-31) returns the order, the reservation expiry and the address, but not the payment session, so the approved contract cannot rebuild it. A normal page reload keeps working because the browser keeps the session in the history entry. If the page is opened without it (new tab, saved link), the screen shows a **Restart payment** button. It calls the existing API-27 with the address stored on the order; the contract already says an earlier unpaid order of the same customer is closed and its reservation released, and the cart is unchanged until payment, so the customer gets a new order and a new payment session with the same items. If someone else took the last copy in between, the customer gets the normal `INSUFFICIENT_STOCK` message. No endpoint was added. A cleaner fix (not done, needs a contract change) would be to return the payment session in API-31 for an order that is still `PendingPayment`, or to add a "get payment session" endpoint. Covered by a server test (`checkout.test.js`), a client test and a browser step.
 - **Unattached images.** Uploaded images that never get attached to a listing are now removed by `MediaService.cleanupOrphans()`: images older than 24 hours that no listing references (removed listings still count as references) are deleted from GridFS. It runs once an hour inside the web service (like the reservation sweeper) and needs no new endpoint. Limit: an image uploaded and then left unsaved for more than 24 hours is deleted, and the seller must upload it again. Covered by a test in `media.test.js`.
+- **Payment captured but order not placed (rare).** If a customer cancels an unpaid order in one tab and the gateway's "payment succeeded" notice arrives afterwards, the order stays closed (`ORDER_NOT_PAYABLE`) and the captured payment is not refunded automatically. The Phase 2 pseudo-code has the same gap. It cannot happen with the fake gateway in a normal run; it must be closed (refund on that path) before a real provider is connected.
 - Editing a listing in the web app finds it by paging through `GET /api/seller/books` because the API has no single-listing endpoint.
 - A removed listing keeps its ISBN reserved for that seller (unique index `{sellerId, isbn}`).
 - Failed token emails (verification, reset) are retried three times in the process but cannot be rebuilt later because the link is not stored; the user can ask for a new link.

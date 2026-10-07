@@ -1,16 +1,7 @@
-const { Wishlist } = require('../../models');
 const { AppError } = require('../../utils/AppError');
 
-// BM-05 Wishlist (FR-10). Repository functions are kept in this file because the module is small.
-const wishlistRepository = {
-  find: (userId) => Wishlist.findOne({ userId }),
-  // $addToSet makes adding idempotent and prevents duplicates
-  add: (userId, bookId) =>
-    Wishlist.findOneAndUpdate({ userId }, { $addToSet: { bookIds: bookId } }, { upsert: true, new: true, setDefaultsOnInsert: true }),
-  remove: (userId, bookId) => Wishlist.updateOne({ userId }, { $pull: { bookIds: bookId } }),
-};
-
-function createWishlistService({ repo = wishlistRepository, bookRepo, catalogService }) {
+// BM-05 Wishlist (FR-10)
+function createWishlistService({ repo, bookRepo, catalogService }) {
   async function view(wishlist) {
     const ids = wishlist ? wishlist.bookIds : [];
     const books = ids.length ? await bookRepo.findByIds(ids) : [];
@@ -33,4 +24,4 @@ function createWishlistService({ repo = wishlistRepository, bookRepo, catalogSer
   };
 }
 
-module.exports = { createWishlistService, wishlistRepository };
+module.exports = { createWishlistService };

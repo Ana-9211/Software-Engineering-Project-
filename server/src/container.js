@@ -17,6 +17,7 @@ const { createInventoryService } = require('./modules/inventory/inventory.servic
 const { createBookManagementService } = require('./modules/book-management/bookManagement.service');
 const { cartRepository } = require('./modules/cart/cart.repository');
 const { createCartService } = require('./modules/cart/cart.service');
+const { wishlistRepository } = require('./modules/wishlist/wishlist.repository');
 const { createWishlistService } = require('./modules/wishlist/wishlist.service');
 const { orderRepository } = require('./modules/order/order.repository');
 const { createOrderService } = require('./modules/order/order.service');
@@ -62,7 +63,7 @@ function createContainer({ config, clock, gateway, mailer, retryDelaysMs }) {
   const inventoryService = createInventoryService({ bookRepo: bookRepository, notificationService, toBook: catalogService.toBook });
   const bookManagementService = createBookManagementService({ bookRepo: bookRepository, catalogService, mediaService, inventoryService });
   const cartService = createCartService({ cartRepo: cartRepository, bookRepo: bookRepository, config });
-  const wishlistService = createWishlistService({ bookRepo: bookRepository, catalogService });
+  const wishlistService = createWishlistService({ repo: wishlistRepository, bookRepo: bookRepository, catalogService });
   const paymentService = createPaymentService({ repo: paymentRepository, gateway, config, clock });
 
   orderService = createOrderService({

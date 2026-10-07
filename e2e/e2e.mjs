@@ -46,6 +46,9 @@ async function newSession(viewport = { width: 1280, height: 900 }) {
 
 async function login(page, email, password) {
   await page.goto('/login');
+  // a visitor who is already logged in is sent away from the login screen: nothing to do
+  await page.waitForLoadState('networkidle');
+  if (!page.url().endsWith('/login')) return;
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Log in' }).click();

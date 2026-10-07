@@ -8,6 +8,9 @@ function build(env = process.env) {
   const isProd = nodeEnv === 'production';
 
   const required = ['MONGODB_URI', 'JWT_SECRET', 'CSRF_SECRET'];
+  // In production the payment and email providers must be named explicitly: the fake gateway and the console
+  // mailer are for development and the course demonstration and must never be used by accident.
+  if (isProd) required.push('PAYMENT_PROVIDER', 'MAIL_PROVIDER');
   if (!isTest) {
     const missing = required.filter((name) => !env[name]);
     if (missing.length > 0) {

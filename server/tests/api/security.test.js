@@ -114,7 +114,7 @@ describe('XSS and output handling (VFR-06)', () => {
 
   test('production mode turns on Secure cookies (HTTPS only, VFR-05)', () => {
     const { build } = require('../../src/config');
-    const prod = build({ NODE_ENV: 'production', MONGODB_URI: 'x', JWT_SECRET: 'x', CSRF_SECRET: 'x' });
+    const prod = build({ NODE_ENV: 'production', MONGODB_URI: 'x', JWT_SECRET: 'x', CSRF_SECRET: 'x', PAYMENT_PROVIDER: 'fake', MAIL_PROVIDER: 'console' });
     expect(prod.cookieSecure).toBe(true);
     expect(prod.isProd).toBe(true);
   });
@@ -227,6 +227,31 @@ describe('configuration contract (SDD 7.2)', () => {
   test('a missing required variable stops start-up with a clear message', () => {
     expect(() => build({ NODE_ENV: 'production' })).toThrow(/MONGODB_URI, JWT_SECRET, CSRF_SECRET/);
     expect(() => build({ NODE_ENV: 'development', MONGODB_URI: 'x', JWT_SECRET: 'x' })).toThrow(/CSRF_SECRET/);
+  });
+  const prodBase = { NODE_ENV: 'production', MONGODB_URI: 'x', JWT_SECRET: 'x', CSRF_SECRET: 'x' };
+  test('production refuses to start without an explicit payment and email provider (no silent fake fallback)', () => {
+    expect(() => build(prodBase)).toThrow(/PAYMENT_PROVIDER, MAIL_PROVIDER/);
+    expect(() => build({ ...prodBase, PAYMENT_PROVIDER: 'fake' })).toThrow(/MAIL_PROVIDER/);
+    expect(() => build({ ...prodBase, MAIL_PROVIDER: 'console' })).toThrow(/PAYMENT_PROVIDER/);
+    expect(() => build({ ...prodBase, PAYMENT_PROVIDER: '', MAIL_PROVIDER: '' })).toThrow(/PAYMENT_PROVIDER/);
+  });
+  test('production starts when both providers are named explicitly (the course demonstration names the fake ones)', () => {
+    const c = build({ ...prodBase, PAYMENT_PROVIDER: 'fake', MAIL_PROVIDER: 'console' });
+    expect(c.payment.provider).toBe('fake');
+    expect(c.mail.provider).toBe('console');
+  });
+  test('an unknown provider name is refused when the adapters are created', () => {
+    const { createGateway } = require('../../src/adapters/payment');
+    const { createMailer } = require('../../src/adapters/mail');
+    expect(() => createGateway({ payment: { provider: 'stripe' } })).toThrow(/Unknown PAYMENT_PROVIDER/);
+    expect(() => createMailer({ mail: { provider: 'sendgrid' } })).toThrow(/Unknown MAIL_PROVIDER/);
+  });
+  test('development and test keep working with the defaults (fake gateway, console mailer)', () => {
+    for (const env of ['development', 'test']) {
+      const c = build({ NODE_ENV: env, MONGODB_URI: 'x', JWT_SECRET: 'x', CSRF_SECRET: 'x' });
+      expect(c.payment.provider).toBe('fake');
+      expect(c.mail.provider).toBe('console');
+    }
   });
   test('bcrypt cost below 10 is refused (VFR-04)', () => {
     expect(() => build({ NODE_ENV: 'test', BCRYPT_COST: '8' })).toThrow(/BCRYPT_COST/);

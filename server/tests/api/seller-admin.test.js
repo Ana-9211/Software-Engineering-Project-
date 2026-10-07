@@ -220,6 +220,26 @@ describe('seller orders and fulfilment (FR-22, FR-15, UC-18, D-07)', () => {
     expect(JSON.stringify(r1.body)).not.toContain(buyer.user.email);
   });
 
+  test('the order summary is worked out from the seller own items only, nothing of another seller leaks (OpenAPI Order.summary)', async () => {
+    const hasNumber = (body, numbers) => numbers.filter((n) => new RegExp(`(^|[^0-9])${n}([^0-9]|$)`).test(JSON.stringify(body)));
+    // order: seller one 1 x 100.00, seller two 2 x 200.00; order totals: subtotal 50000, tax 2500, shipping 4900, total 57400
+    const r1 = await s1.api.get('/api/seller/orders');
+    const r2 = await s2.api.get('/api/seller/orders');
+    const o1 = r1.body.items.find((o) => o.id === orderId);
+    const o2 = r2.body.items.find((o) => o.id === orderId);
+    expect(o1.summary).toEqual({ subtotal: 10000, tax: 500, shippingFee: 0, total: 10500 });
+    expect(o2.summary).toEqual({ subtotal: 40000, tax: 2000, shippingFee: 0, total: 42000 });
+    for (const v of Object.values(o1.summary)) expect(Number.isInteger(v)).toBe(true);
+    // seller one never sees seller two amounts, the order total, the order subtotal or the shipping fee
+    expect(hasNumber(r1.body, [20000, 40000, 42000, 50000, 2500, 4900, 57400])).toEqual([]);
+    expect(hasNumber(r2.body, [10000, 10500, 50000, 2500, 4900, 57400])).toEqual([]);
+    // the customer still sees the full order summary
+    const full = (await buyer.api.get(`/api/orders/${orderId}`)).body;
+    expect(full.summary).toEqual({ subtotal: 50000, tax: 2500, shippingFee: 4900, total: 57400 });
+    // the seller summary adds up
+    expect(o1.summary.total).toBe(o1.summary.subtotal + o1.summary.tax + o1.summary.shippingFee);
+  });
+
   test('status moves one step at a time; the order status is the lowest item status', async () => {
     const order = await ctx.models.Order.findById(orderId);
     const item1 = order.items.find((i) => String(i.sellerId) === String(s1.user._id))._id;
@@ -266,6 +286,32 @@ describe('seller orders and fulfilment (FR-22, FR-15, UC-18, D-07)', () => {
     const packed = await s1.api.get('/api/seller/orders?status=Packed');
     expect(packed.body.items).toHaveLength(0);
     expect((await s1.api.get('/api/seller/orders?status=bogus')).status).toBe(400);
+  });
+
+  test('the status update response has the same seller-scoped summary and shows no other seller data', async () => {
+    // its own order, so the other tests of this group keep their data
+    const buyer2 = await actor(ctx);
+    await buyer2.api.post('/api/cart/items', { bookId: String(b1._id), quantity: 1 });
+    await buyer2.api.post('/api/cart/items', { bookId: String(b2._id), quantity: 2 });
+    const created = await buyer2.api.post('/api/orders', { shippingAddress: address });
+    const oid = created.body.order.id;
+    await buyer2.api.post(`/api/orders/${oid}/payment/confirm`, created.body.payment.clientConfig.successPayment);
+    const items = (await ctx.models.Order.findById(oid)).items;
+    const itemTwo = items.find((i) => String(i.sellerId) === String(s2.user._id))._id;
+    const itemOne = items.find((i) => String(i.sellerId) === String(s1.user._id))._id;
+
+    const res = await s2.api.patch(`/api/seller/orders/${oid}/items/${itemTwo}/status`, { status: 'Packed' });
+    expect(res.status).toBe(200);
+    expect(res.body.summary).toEqual({ subtotal: 40000, tax: 2000, shippingFee: 0, total: 42000 });
+    expect(res.body.items.map((i) => i.title)).toEqual(['Seller Two Book']);
+    const text = JSON.stringify(res.body);
+    expect(text).not.toContain('Seller One Book');
+    for (const n of [10000, 10500, 50000, 2500, 4900, 57400]) expect(new RegExp(`(^|[^0-9])${n}([^0-9]|$)`).test(text)).toBe(false);
+    // not their item: still 404 with no order data
+    const denied = await s2.api.patch(`/api/seller/orders/${oid}/items/${itemOne}/status`, { status: 'Packed' });
+    expect(denied.status).toBe(404);
+    expect(denied.body.summary).toBeUndefined();
+    expect(denied.body.items).toBeUndefined();
   });
 });
 

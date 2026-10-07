@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { AppError, notFound } = require('../../utils/AppError');
 const { toPage } = require('../../utils/pagination');
 const { toObjectId } = require('../../utils/ids');
+const { computeSummary } = require('../../utils/money');
 const logger = require('../../utils/logger');
 const { deriveOrderStatus, isValidTransition, PLACED_OR_LATER } = require('./orderStatusPolicy');
 
@@ -47,17 +48,20 @@ function toOrder(order, payment) {
   };
 }
 
-// What a seller sees: only their own items, plus the shipping name and address needed to ship (API-42)
-function toSellerOrder(o, sellerId) {
+// What a seller sees: only their own items, plus the shipping name and address needed to ship (API-42, API-43).
+// The `summary` required by the OpenAPI Order schema is worked out from the seller's own items only, so it
+// never shows another seller's amounts or the order total: subtotal and tax of the seller's own lines, no
+// shipping fee (the flat fee belongs to the whole order and is not split between sellers).
+function toSellerOrder(o, sellerId, taxRatePercent) {
+  const own = o.items.filter((i) => String(i.sellerId) === String(sellerId));
   return {
     id: String(o._id),
     orderNumber: o.orderNumber,
     status: o.status,
     placedAt: o.placedAt,
     shippingAddress: o.shippingAddress,
-    items: o.items
-      .filter((i) => String(i.sellerId) === String(sellerId))
-      .map((i) => ({
+    summary: computeSummary(own, { taxRatePercent, shippingFlatFee: 0 }),
+    items: own.map((i) => ({
         id: String(i._id),
         bookId: String(i.bookId),
         title: i.titleSnapshot,
@@ -293,7 +297,7 @@ function createOrderService({ repo, cartService, inventoryService, paymentServic
     // BM-09 / I-18: seller views and fulfilment
     async listSellerOrders(sellerId, status, page) {
       const { items, totalItems } = await repo.listForSeller(toObjectId(sellerId), status, page, SELLER_PAGE_SIZE);
-      const shaped = items.map((o) => toSellerOrder(o, sellerId));
+      const shaped = items.map((o) => toSellerOrder(o, sellerId, config.taxRatePercent));
       return toPage(shaped, page, SELLER_PAGE_SIZE, totalItems);
     },
 
@@ -311,7 +315,7 @@ function createOrderService({ repo, cartService, inventoryService, paymentServic
         return repo.setStatus(orderId, deriveOrderStatus(moved.items), { session });
       });
       if (!updated) throw notFound('Order item not found');
-      return toSellerOrder(updated, sellerId);
+      return toSellerOrder(updated, sellerId, config.taxRatePercent);
     },
   };
 }
