@@ -1,0 +1,29 @@
+{
+  "name": "online-bookstore",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Online Bookstore - MERN e-commerce platform for buying and selling books (Software Engineering course project)",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:db": "npm run dev:db -w server",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "build": "npm run build -w client",
+    "start": "npm start -w server",
+    "test": "npm test -w server",
+    "test:client": "npm test -w client",
+    "lint": "npm run lint -w server && npm run lint -w client",
+    "seed:admin": "npm run seed:admin -w server",
+    "seed:demo": "npm run seed:demo -w server"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "axe-core": "^4.14.0",
+    "playwright-core": "^1.63.0"
+  }
+}
