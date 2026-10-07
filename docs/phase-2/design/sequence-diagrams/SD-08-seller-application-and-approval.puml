@@ -1,0 +1,57 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-08 Seller application and administrator approval (UC-15, UC-21)
+autonumber
+participant "React SPA" as SPA
+participant "SellerService\n(BM-09)" as SEL
+participant "AdminService\n(BM-11)" as ADM
+participant "UserService\n(BM-02)" as USR
+database "MongoDB" as DB
+SPA -> SEL : POST /api/seller/applications (Customer)\n[CSRF, auth, role customer]
+SEL -> DB : check no pending application, not a seller
+alt pending application or already a seller
+  SEL --> SPA : 409 APPLICATION_EXISTS or ALREADY_SELLER
+else allowed
+  SEL -> DB : save application (pending)
+  SEL --> SPA : 201 pending
+end
+SPA -> ADM : GET /api/admin/seller-applications (Administrator)
+ADM --> SPA : 200 pending applications
+SPA -> ADM : POST /api/admin/seller-applications/:applicationId/approve
+ADM -> SEL : decideApplication(adminId, id, approve)
+alt not pending
+  SEL --> SPA : 409 NOT_PENDING
+else pending
+  SEL -> USR : grantRole(userId, seller, sellerProfile)
+  USR -> DB : add seller to roles (customer kept)\nmark application approved (one transaction)
+  SEL --> SPA : 200 approved
+end
+SPA -> SEL : GET /api/seller/applications/me
+SEL --> SPA : 200 status approved
+@enduml

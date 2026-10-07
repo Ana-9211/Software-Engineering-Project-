@@ -1,0 +1,52 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-07 Cancel order, release reservation or refund (UC-11)
+autonumber
+participant "React SPA" as SPA
+participant "OrderService\n(BM-06)" as ORD
+participant "InventoryService\n(BM-10)" as INV
+participant "PaymentService\n(BM-07)" as PAY
+participant "Payment Gateway\n(external)" as GW
+SPA -> ORD : POST /api/orders/:orderId/cancel\n[CSRF, auth, owner]
+alt order not found or not owned
+  ORD --> SPA : 404 NOT_FOUND
+else an item is Shipped or Delivered, or order already closed
+  ORD --> SPA : 409 ORDER_NOT_CANCELLABLE
+else unpaid order (PendingPayment)
+  ORD -> INV : releaseReservation(items)
+  ORD --> SPA : 200 order PaymentFailed (no refund)
+else Placed or Packed order
+  ORD -> INV : restore(items) and mark order\nCancelled (one transaction)
+  ORD -> PAY : refund(payment, total)
+  PAY -> GW : refund
+  GW --> PAY : accepted or error
+  ORD --> SPA : 200 order Cancelled,\nrefundStatus
+end
+note over PAY, GW : On a gateway error the payment becomes refund_pending\nand the order stays Cancelled.
+@enduml

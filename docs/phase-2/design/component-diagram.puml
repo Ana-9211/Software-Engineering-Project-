@@ -1,0 +1,80 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Online Bookstore: Component Overview
+top to bottom direction
+skinparam nodesep 25
+skinparam ranksep 28
+component "React SPA (AC-01)\nUI modules FM-01 to FM-11" as SPA
+component "REST API Layer (AC-02)\nBM-15 Platform and Security:\nroutes, controllers, middleware" as APIL
+rectangle "Business Service Layer (AC-03)" as SVC {
+  component "Accounts and communication\nBM-01 Authentication\nBM-02 User and Profile\nBM-13 Notification" as G0
+  component "Catalog and content\nBM-03 Catalog\nBM-05 Wishlist\nBM-08 Review\nBM-14 Media\nBM-16 Book Management" as G1
+  component "Purchase\nBM-04 Cart\nBM-06 Order\nBM-07 Payment\nBM-10 Inventory" as G2
+  component "Seller and administration\nBM-09 Seller\nBM-11 Admin\nBM-12 Reporting" as G3
+}
+rectangle "Data Access Layer (AC-04)\nrepositories and Mongoose models" as DAL
+database "MongoDB (AC-05)" as DB
+component "Payment Adapter (AC-06)" as PAD
+component "Email Adapter (AC-07)" as EAD
+cloud "Payment Gateway\n(external)" as PG
+cloud "Email Service\n(external)" as ES
+cloud "Uptime monitor\n(external)" as UM
+SPA -down-> APIL : HTTPS, JSON (I-01)
+UM -down-> APIL : GET /api/health (I-26)
+APIL -down-> SVC : I-02
+G1 ..> G2
+G2 ..> G0
+G2 ..> G1
+G3 ..> G0
+G3 ..> G1
+G3 ..> G2
+SVC -down-> DAL
+DAL -down-> DB
+G2 -right-> PAD : I-11
+G0 -left-> EAD : I-12
+PAD -down-> PG : HTTPS
+EAD -down-> ES : SMTP or HTTPS
+PG .up.> APIL : I-25 webhook
+legend bottom
+I-01 browser to API (HTTPS, JSON)   I-02 controllers to services   I-03 services to repositories
+I-11 BM-07 to payment adapter   I-12 BM-13 to email adapter   I-25 gateway webhook   I-26 health check
+Every module also uses BM-15 (not drawn). Dependencies between single modules are in the next diagram.
+endlegend
+@enduml

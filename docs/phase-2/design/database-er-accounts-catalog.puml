@@ -1,0 +1,121 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Database ER 1 of 2: Accounts, Catalog and Content
+hide circle
+skinparam nodesep 45
+skinparam ranksep 55
+entity "users" as users {
+  * _id : ObjectId <<PK>>
+  --
+  * name : String
+  * email : String
+  * roles : [String]
+  * status : String
+}
+entity "auth_tokens" as auth_tokens {
+  * _id : ObjectId <<PK>>
+  --
+  * userId : ObjectId
+  * type : String
+  * expiresAt : Date
+}
+entity "seller_applications" as seller_applications {
+  * _id : ObjectId <<PK>>
+  --
+  * userId : ObjectId
+  * status : String
+}
+entity "notifications" as notifications {
+  * _id : ObjectId <<PK>>
+  --
+  * userId : ObjectId
+  * channel : String
+  * type : String
+  * status : String
+}
+entity "categories" as categories {
+  * _id : ObjectId <<PK>>
+  --
+  * name : String
+}
+entity "books" as books {
+  * _id : ObjectId <<PK>>
+  --
+  * sellerId : ObjectId
+  * title : String
+  * isbn : String
+  * price : Integer
+  * categoryId : ObjectId
+  * stock : Integer
+  * reserved : Integer
+  * status : String
+  * searchTrigrams : [String]
+}
+entity "reviews" as reviews {
+  * _id : ObjectId <<PK>>
+  --
+  * bookId : ObjectId
+  * userId : ObjectId
+  * rating : Integer
+}
+entity "Address\n(embedded in users)" as Address {
+  * _id : ObjectId
+  * fullName : String
+  * city : String
+  * postalCode : String
+    isDefault : Boolean
+}
+entity "fs.files / fs.chunks\n(GridFS images)" as fsfiles {
+  * _id : ObjectId <<PK>>
+  --
+  * filename : String
+  * contentType : String
+  * metadata.ownerId : ObjectId
+}
+users ||--o{ auth_tokens
+users ||--o{ seller_applications : applies
+users ||--o{ notifications
+users ||--o{ books : sells (sellerId)
+categories ||--o{ books : categoryId
+books ||--o{ reviews : about
+users ||--o{ reviews : writes
+users ||--o{ Address : "addresses (max 5)"
+books }o..o{ fsfiles : imageIds
+@enduml

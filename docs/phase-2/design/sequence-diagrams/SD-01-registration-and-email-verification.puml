@@ -1,0 +1,57 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-01 Registration and email verification (UC-04, UC-25)
+autonumber
+actor Guest
+participant "React SPA" as SPA
+participant "AuthService\n(BM-01)" as AUTH
+participant "NotificationService\n(BM-13)" as NOT
+database "MongoDB" as DB
+participant "Email Service\n(external)" as MAIL
+Guest -> SPA : submit registration form
+SPA -> AUTH : POST /api/auth/register\n[CSRF, rate limit, validation]
+AUTH -> DB : find user by email
+alt email already registered
+  AUTH --> SPA : 409 EMAIL_TAKEN
+else new email
+  AUTH -> DB : save user (pending_verification)\nand hashed token (24 h)
+  AUTH -> NOT : sendVerificationEmail(user, token)
+  AUTH --> SPA : 201 message
+  NOT ->> MAIL : verification link\n(queued, retried)
+end
+Guest -> SPA : open the link in the email
+SPA -> AUTH : POST /api/auth/verify-email
+AUTH -> DB : find unused, unexpired token
+alt token valid
+  AUTH -> DB : activate user, mark token used
+  AUTH --> SPA : 200
+else invalid or expired
+  AUTH --> SPA : 400 TOKEN_INVALID_OR_EXPIRED
+end
+@enduml

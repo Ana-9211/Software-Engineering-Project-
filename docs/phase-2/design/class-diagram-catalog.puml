@@ -1,0 +1,84 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Domain Classes 2 of 3: Catalog and Reviews
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam nodesep 45
+skinparam ranksep 55
+class User
+class Category {
+  id
+  name
+}
+class Book {
+  id
+  title
+  author
+  isbn
+  price
+  description
+  language
+  imageIds
+  stock
+  reserved
+  lowStockThreshold
+  status : BookStatus
+  avgRating
+  reviewCount
+  searchText <<derived>>
+  searchTrigrams <<derived>>
+  +available() : integer
+  +isInStock() : boolean
+}
+class Review {
+  id
+  rating
+  comment
+  createdAt
+}
+User "1" -- "0..*" Book : sells
+Category "1" -- "0..*" Book : classifies
+Book "1" -- "0..*" Review : has
+User "1" -- "0..*" Review : writes
+note right of Book
+  available = stock - reserved
+  (units not held by an open checkout)
+end note
+@enduml

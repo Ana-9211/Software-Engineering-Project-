@@ -1,0 +1,55 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-11 Customer review (UC-12)
+autonumber
+actor Customer
+participant "React SPA" as SPA
+participant "ReviewService\n(BM-08)" as REV
+participant "CatalogService\n(BM-03)" as CAT
+database "MongoDB" as DB
+Customer -> SPA : submit rating and comment
+SPA -> REV : POST /api/books/:bookId/reviews\n[CSRF, auth, role customer, validation]
+REV -> DB : find approved book
+alt book not found
+  REV --> SPA : 404 NOT_FOUND
+else book found
+  REV -> DB : find a Delivered item of this customer for the book
+  alt no delivered purchase
+    REV --> SPA : 403 NOT_ELIGIBLE
+  else purchased and delivered
+    REV -> DB : save review (unique per customer and book)
+    alt duplicate review
+      REV --> SPA : 409 ALREADY_REVIEWED
+    else new review
+      REV -> CAT : recalculateRating(bookId)
+      REV --> SPA : 201 review
+    end
+  end
+end
+@enduml

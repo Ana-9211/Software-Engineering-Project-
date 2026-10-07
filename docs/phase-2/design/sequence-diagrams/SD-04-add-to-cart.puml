@@ -1,0 +1,51 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-04 Add a book to the cart (UC-06)
+autonumber
+actor Customer
+participant "React SPA" as SPA
+participant "CartService\n(BM-04)" as CART
+participant "InventoryService\n(BM-10)" as INV
+database "MongoDB" as DB
+Customer -> SPA : click Add to cart
+SPA -> CART : POST /api/cart/items\n[CSRF, auth, role customer, validation]
+CART -> DB : find approved book and current cart line
+alt book missing or hidden
+  CART --> SPA : 404 BOOK_NOT_FOUND
+else book available
+  CART -> INV : checkAvailability(cart quantity + new quantity)
+  alt more than available (stock - reserved)
+    INV --> CART : INSUFFICIENT_STOCK
+    CART --> SPA : 409 INSUFFICIENT_STOCK
+  else enough available
+    CART -> DB : save cart line
+    CART --> SPA : 200 cart with summary
+  end
+end
+@enduml

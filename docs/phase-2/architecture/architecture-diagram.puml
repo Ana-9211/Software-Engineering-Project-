@@ -1,0 +1,69 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 120
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Online Bookstore: High-Level Architecture
+top to bottom direction
+actor "Guest, Customer,\nSeller, Administrator" as USER
+node "User device" {
+  component "React SPA (AC-01)\nPresentation layer" as SPA
+}
+cloud "Uptime monitor\n(external, tool TBD)" as UM
+node "Web service: Node.js + Express" {
+  component "REST API Layer (AC-02)\nroutes, controllers, middleware" as API
+  component "Business Service Layer (AC-03)\n16 backend modules" as SVC
+  component "Data Access Layer (AC-04)\nMongoose models, repositories" as DAL
+  component "Payment Adapter (AC-06)" as PAD
+  component "Email Adapter (AC-07)" as EAD
+}
+database "MongoDB (AC-05)\nreplica set, GridFS images" as DB
+cloud "Payment Gateway\n(external, test mode)" as PG
+cloud "Email Service\n(external, provider TBD)" as ES
+USER --> SPA : uses
+SPA --> API : HTTPS, JSON\ncookie + CSRF header
+UM --> API : GET /api/health\nevery 5 min or less (AC-08)
+API --> SVC : function calls
+SVC --> DAL : function calls
+DAL --> DB : MongoDB driver (TLS)
+SVC --> PAD : PaymentGateway interface
+SVC --> EAD : MailSender interface
+PAD --> PG : HTTPS
+EAD --> ES : SMTP or HTTPS (TLS)
+PG ..> API : signed webhook (HTTPS)
+SPA ..> PG : card entry in gateway-hosted form (HTTPS)
+@enduml

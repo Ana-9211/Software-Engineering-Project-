@@ -1,0 +1,109 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 100
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title Online Bookstore: Backend Module Dependencies
+top to bottom direction
+hide stereotype
+skinparam nodesep 30
+skinparam ranksep 55
+skinparam component<<G0>> {
+  BackgroundColor #DDE8F7
+  BorderColor #000000
+}
+skinparam component<<G1>> {
+  BackgroundColor #E3F2DA
+  BorderColor #000000
+}
+skinparam component<<G2>> {
+  BackgroundColor #FBEBD0
+  BorderColor #000000
+}
+skinparam component<<G3>> {
+  BackgroundColor #F1DDF0
+  BorderColor #000000
+}
+component "BM-01\nAuthentication" as BM01 <<G0>>
+component "BM-02\nUser and Profile" as BM02 <<G0>>
+component "BM-03\nCatalog" as BM03 <<G1>>
+component "BM-04\nCart" as BM04 <<G2>>
+component "BM-05\nWishlist" as BM05 <<G1>>
+component "BM-06\nOrder" as BM06 <<G2>>
+component "BM-07\nPayment" as BM07 <<G2>>
+component "BM-08\nReview" as BM08 <<G1>>
+component "BM-09\nSeller" as BM09 <<G3>>
+component "BM-10\nInventory" as BM10 <<G2>>
+component "BM-11\nAdmin" as BM11 <<G3>>
+component "BM-12\nReporting" as BM12 <<G3>>
+component "BM-13\nNotification" as BM13 <<G0>>
+component "BM-14\nMedia" as BM14 <<G1>>
+component "BM-16\nBook Management" as BM16 <<G1>>
+BM01 ..> BM02
+BM01 ..> BM13
+BM04 ..> BM03
+BM04 ..> BM10
+BM05 ..> BM03
+BM06 ..> BM02
+BM06 ..> BM04
+BM06 ..> BM07
+BM06 ..> BM10
+BM06 ..> BM13
+BM08 ..> BM03
+BM08 ..> BM06
+BM09 ..> BM02
+BM09 ..> BM06
+BM10 ..> BM13
+BM11 ..> BM01
+BM11 ..> BM02
+BM11 ..> BM03
+BM11 ..> BM08
+BM11 ..> BM09
+BM11 ..> BM12
+BM11 ..> BM16
+BM12 ..> BM06
+BM16 ..> BM03
+BM16 ..> BM10
+BM16 ..> BM14
+legend bottom
+|<#DDE8F7>   | Accounts and communication |
+|<#E3F2DA>   | Catalog and content |
+|<#FBEBD0>   | Purchase |
+|<#F1DDF0>   | Seller and administration |
+BM-15 Platform and Security is used by every module (not drawn). An arrow from A to B means A calls B.
+endlegend
+@enduml

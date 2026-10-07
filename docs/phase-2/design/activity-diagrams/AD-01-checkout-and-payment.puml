@@ -1,0 +1,85 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 130
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam node {
+  BackgroundColor #F7F7F7
+  BorderColor #000000
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam cloud {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title AD-01 Checkout, reservation and payment (UC-08, UC-09)
+|Customer|
+start
+:Open checkout, choose or enter address;
+|System|
+:Release the customer's earlier unpaid order;
+:Reserve stock of every cart line (one transaction);
+if (Every line reserved?) then (no)
+  :Reject checkout, nothing reserved;
+  |Customer|
+  :See which book is short;
+  stop
+else (yes)
+endif
+|System|
+:Save order PendingPayment with reservation expiry;
+:Create payment at the gateway;
+if (Gateway error?) then (yes)
+  :Release the reservation;
+  |Customer|
+  :See error, may retry;
+  stop
+else (no)
+endif
+|Customer|
+:Pay in the gateway form (time left shown);
+|System|
+if (Payment confirmed?) then (no)
+  :Release the reservation, mark PaymentFailed;
+  |Customer|
+  :See payment failed, may retry;
+  stop
+else (yes)
+endif
+|System|
+:Finalise reservation (stock decremented),
+mark order Placed, clear cart, queue email;
+|Customer|
+:See order confirmation;
+note right
+  Abandoned or expired checkouts are released
+  by the sweeper. A payment that arrives after
+  expiry is handled as described in SD-06.
+end note
+stop
+@enduml

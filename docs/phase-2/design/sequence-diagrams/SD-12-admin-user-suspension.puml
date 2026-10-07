@@ -1,0 +1,51 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam ArrowColor #000000
+skinparam roundcorner 6
+skinparam dpi 125
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 150
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #000000
+  LifeLineBorderColor #808080
+  ActorBackgroundColor #FFFFFF
+  ActorBorderColor #000000
+  GroupBackgroundColor #F0F0F0
+  GroupBorderColor #808080
+  ArrowThickness 1
+}
+skinparam note {
+  BackgroundColor #FFFFFF
+  BorderColor #808080
+}
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+title SD-12 Administrator suspends a user (UC-20)
+autonumber
+participant "React SPA" as SPA
+participant "AdminService\n(BM-11)" as ADM
+participant "UserService\n(BM-02)" as USR
+participant "AuthService\n(BM-01)" as AUTH
+database "MongoDB" as DB
+SPA -> ADM : PATCH /api/admin/users/:userId/status\n[CSRF, auth, role admin, validation]
+alt target is the administrator's own account
+  ADM --> SPA : 409 CANNOT_MODIFY_SELF
+else other user
+  ADM -> USR : setStatus(userId, suspended)
+  USR -> DB : status = suspended
+  ADM -> AUTH : invalidateSessions(userId)
+  AUTH -> DB : tokenVersion + 1
+  ADM --> SPA : 200 user suspended
+end
+note over SPA, AUTH : Later requests of the suspended user
+SPA -> AUTH : GET /api/auth/me (old cookie)
+AUTH --> SPA : 401 UNAUTHENTICATED (token version changed)
+SPA -> AUTH : POST /api/auth/login
+AUTH --> SPA : 403 ACCOUNT_SUSPENDED
+@enduml
