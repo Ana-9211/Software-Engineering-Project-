@@ -1,0 +1,101 @@
+@startuml
+title Online Bookstore - Use Case Diagram
+left to right direction
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam packageStyle rectangle
+skinparam ranksep 40
+skinparam nodesep 14
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  ArrowColor #000000
+}
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+}
+skinparam rectangle {
+  BackgroundColor #FAFAFA
+  BorderColor #000000
+}
+
+actor "Guest" as Guest
+actor "Customer" as Customer
+actor "Seller" as Seller
+
+rectangle "Online Bookstore" {
+  usecase "UC-01\nBrowse catalog" as UC01
+  usecase "UC-02\nSearch and filter books" as UC02
+  usecase "UC-03\nView book details" as UC03
+  usecase "UC-04\nRegister account" as UC04
+  usecase "UC-05\nLog in / log out" as UC05
+  usecase "UC-06\nManage cart" as UC06
+  usecase "UC-07\nManage wishlist" as UC07
+  usecase "UC-08\nCheckout and place order" as UC08
+  usecase "UC-09\nPay online" as UC09
+  usecase "UC-10\nView and track orders" as UC10
+  usecase "UC-11\nCancel order" as UC11
+  usecase "UC-12\nRate and review book" as UC12
+  usecase "UC-13\nManage profile and addresses" as UC13
+  usecase "UC-14\nReset password" as UC14
+  usecase "UC-15\nApply as seller" as UC15
+  usecase "UC-16\nManage book listings" as UC16
+  usecase "UC-17\nManage inventory" as UC17
+  usecase "UC-18\nProcess orders" as UC18
+  usecase "UC-19\nView sales report" as UC19
+  usecase "UC-20\nManage users" as UC20
+  usecase "UC-21\nApprove sellers and listings" as UC21
+  usecase "UC-22\nModerate reviews" as UC22
+  usecase "UC-23\nManage categories" as UC23
+  usecase "UC-24\nView platform reports" as UC24
+  usecase "UC-25\nSend notification" as UC25
+}
+
+actor "Administrator" as Admin
+actor "Payment Gateway" as Pay
+actor "Email Service" as Mail
+
+Guest -- UC01
+Guest -- UC02
+Guest -- UC03
+Guest -- UC04
+
+Customer -- UC01
+Customer -- UC02
+Customer -- UC03
+Customer -- UC05
+Customer -- UC06
+Customer -- UC07
+Customer -- UC08
+Customer -- UC10
+Customer -- UC11
+Customer -- UC12
+Customer -- UC13
+Customer -- UC14
+Customer -- UC15
+
+Seller -- UC05
+Seller -- UC16
+Seller -- UC17
+Seller -- UC18
+Seller -- UC19
+
+Admin -- UC05
+Admin -- UC20
+Admin -- UC21
+Admin -- UC22
+Admin -- UC23
+Admin -- UC24
+
+UC08 ..> UC09 : <<include>>
+UC08 ..> UC25 : <<include>>
+UC04 ..> UC25 : <<include>>
+UC14 ..> UC25 : <<include>>
+
+UC09 -- Pay
+UC11 -- Pay
+UC25 -- Mail
+@enduml
