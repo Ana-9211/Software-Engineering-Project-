@@ -310,3 +310,24 @@ describe('listings: create, edit, remove (FR-20, FR-25, UC-16)', () => {
     expect(res.body.items[0]).toHaveProperty('reserved');
   });
 });
+
+describe('catalogue total cache (VFR-02)', () => {
+  const { bookRepository, setCountCacheTtl } = require('../../src/modules/catalog/book.repository');
+  afterEach(() => setCountCacheTtl(0));
+
+  test('with a TTL the total is reused for the same filter while the items stay current; with TTL 0 it is exact', async () => {
+    const owner = await createUser(ctx, { roles: ['customer', 'seller'] });
+    const cat = await createCategory('Cache tests');
+    const filter = { status: 'approved', categoryId: cat._id };
+    setCountCacheTtl(60000);
+    await createBook(ctx, owner, cat._id, { stock: 3 });
+    expect((await bookRepository.search(filter, 'newest', 1, 20)).totalItems).toBe(1);
+    await createBook(ctx, owner, cat._id, { stock: 3 });
+    const cached = await bookRepository.search(filter, 'newest', 1, 20);
+    expect(cached.totalItems).toBe(1); // remembered total
+    expect(cached.items).toHaveLength(2); // the items are always read fresh
+    expect((await bookRepository.search({ ...filter, status: 'approved', categoryId: cat._id, price: { $gte: 0 } }, 'newest', 1, 20)).totalItems).toBe(2); // another filter, another entry
+    setCountCacheTtl(0);
+    expect((await bookRepository.search(filter, 'newest', 1, 20)).totalItems).toBe(2);
+  });
+});

@@ -1,3 +1,4 @@
+const util = require('util');
 const { Book } = require('../../models');
 const { AppError } = require('../../utils/AppError');
 
@@ -13,12 +14,35 @@ const SORTS = {
   rating_desc: { avgRating: -1, createdAt: -1, _id: -1 },
 };
 
+// The total behind the page links of the public catalogue is the most expensive part of a list request, and
+// it only has to be roughly right, so it is remembered for a few seconds (CATALOG_COUNT_TTL_MS, 0 = off).
+// The items themselves are never cached. VFR-02.
+const COUNT_CACHE_MAX = 500;
+const countCache = new Map();
+let countTtlMs = 0;
+
+function setCountCacheTtl(ms) {
+  countTtlMs = ms;
+  countCache.clear();
+}
+
+async function cachedCount(filter) {
+  if (countTtlMs <= 0) return Book.countDocuments(filter);
+  const key = util.inspect(filter, { depth: null });
+  const hit = countCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+  const value = await Book.countDocuments(filter);
+  if (countCache.size >= COUNT_CACHE_MAX) countCache.delete(countCache.keys().next().value);
+  countCache.set(key, { value, expires: Date.now() + countTtlMs });
+  return value;
+}
+
 // BookRepository: used by Catalog (BM-03), Book Management (BM-16) and Inventory (BM-10).
 const bookRepository = {
   async search(filter, sort, page, pageSize) {
     const [items, totalItems] = await Promise.all([
-      Book.find(filter).select(HIDE_SEARCH).sort(SORTS[sort] || SORTS.newest).skip((page - 1) * pageSize).limit(pageSize),
-      Book.countDocuments(filter),
+      Book.find(filter).select(HIDE_SEARCH).sort(SORTS[sort] || SORTS.newest).skip((page - 1) * pageSize).limit(pageSize).lean(), // plain objects: the list is read-only
+      cachedCount(filter),
     ]);
     return { items, totalItems };
   },
@@ -109,4 +133,4 @@ const bookRepository = {
   },
 };
 
-module.exports = { bookRepository, SORTS };
+module.exports = { setCountCacheTtl, bookRepository, SORTS };
