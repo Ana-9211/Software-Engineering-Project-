@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+client/dist
+.git
+.github
+docs
+e2e
+validation
+backups
+.mongo-data
+**/.env
+**/.env.*
+!**/.env.example
+**/coverage
