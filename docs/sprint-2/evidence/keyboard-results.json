@@ -1,0 +1,72 @@
+{
+ "name": "Keyboard accessibility validation",
+ "total": 7,
+ "pass": 7,
+ "fail": 0,
+ "generatedAt": "2026-10-27T18:39:42.986Z",
+ "rows": [
+  {
+   "id": "KB-01",
+   "section": "Keyboard only (Edge)",
+   "refs": "VFR-11",
+   "description": "the first Tab stop is the \"Skip to content\" link",
+   "expected": "Skip to content",
+   "actual": "Skip to content",
+   "result": "PASS"
+  },
+  {
+   "id": "KB-02",
+   "section": "Keyboard only (Edge)",
+   "refs": "VFR-11",
+   "description": "activating the skip link moves focus to the main content",
+   "expected": "#content",
+   "actual": "#content",
+   "result": "PASS"
+  },
+  {
+   "id": "KB-03",
+   "section": "Keyboard only (Edge)",
+   "refs": "VFR-11",
+   "description": "Tab reaches the navigation, search box, filters, book links and paging controls (25 stops, none is the page body)",
+   "expected": "no BODY stops",
+   "actual": "0 body stops; e.g. Skip to content > Online Bookstore > Catalog > Log in > Register > q > Search > NewestPrice: low to highPrice:",
+   "result": "PASS"
+  },
+  {
+   "id": "KB-04",
+   "section": "Keyboard only (Edge)",
+   "refs": "VFR-11",
+   "description": "every focused control shows a visible focus indicator",
+   "expected": "all 25 visible",
+   "actual": "25 of 25",
+   "result": "PASS"
+  },
+  {
+   "id": "KB-05",
+   "section": "Keyboard only (Edge)",
+   "refs": "VFR-11",
+   "description": "the login form can be completed and submitted with the keyboard only (Enter)",
+   "expected": "logged in",
+   "actual": "Cart link visible",
+   "result": "PASS"
+  },
+  {
+   "id": "KB-06",
+   "section": "Keyboard only (Edge)",
+   "refs": "VFR-11",
+   "description": "opening a dialog moves focus into it",
+   "expected": "focus inside the dialog",
+   "actual": "true",
+   "result": "PASS"
+  },
+  {
+   "id": "KB-07",
+   "section": "Keyboard only (Edge)",
+   "refs": "VFR-11",
+   "description": "Escape closes the dialog and focus returns to the \"Cancel order\" button",
+   "expected": "Cancel order",
+   "actual": "Cancel order",
+   "result": "PASS"
+  }
+ ]
+}

@@ -1,0 +1,396 @@
+{
+ "name": "Database and data-integrity validation",
+ "total": 43,
+ "pass": 43,
+ "fail": 0,
+ "generatedAt": "2026-10-27T18:39:24.284Z",
+ "rows": [
+  {
+   "id": "DB-00",
+   "section": "Counts",
+   "refs": "SDD 8.1",
+   "description": "11 collections plus GridFS exist and hold data from the live run",
+   "expected": "all 13 present",
+   "actual": "{\"users\":188,\"auth_tokens\":3,\"categories\":5,\"books\":23,\"carts\":176,\"wishlists\":1,\"orders\":37,\"payments\":37,\"reviews\":0,\"seller_applications\":2,\"notifications\":27,\"fs.files\":3,\"fs.chunks\":3}",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-01",
+   "section": "Counts",
+   "refs": "SDD 8.1",
+   "description": "the 11 collections of the data dictionary exist",
+   "expected": "users auth_tokens categories books carts wishlists orders payments reviews seller_applications notifications",
+   "actual": "auth_tokens books carts categories notifications orders payments reviews seller_applications users wishlists",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-02",
+   "section": "Stock and reservation (FR-30, D-06, VFR-14)",
+   "refs": "FR-30",
+   "description": "every book has integer stock >= 0, reserved >= 0 and reserved <= stock",
+   "expected": "0 violations",
+   "actual": "0 violations in 23 books",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-03",
+   "section": "Stock and reservation (FR-30, D-06, VFR-14)",
+   "refs": "D-06",
+   "description": "reserved equals the units held by open (PendingPayment) orders, for every book",
+   "expected": "0 mismatches",
+   "actual": "0 mismatches; 7 open orders",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-04",
+   "section": "Stock and reservation (FR-30, D-06, VFR-14)",
+   "refs": "D-06, I-27",
+   "description": "no unpaid order stays open more than 3 minutes past its expiry (sweeper runs every minute)",
+   "expected": "0 stuck",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-05",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "FR-12, D-08",
+   "description": "order totals = subtotal + tax + shipping; line totals = price x quantity; all integers",
+   "expected": "0 violations",
+   "actual": "0 of 37 orders",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-06",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "D-07",
+   "description": "every order has a valid status",
+   "expected": "valid",
+   "actual": "Placed,PaymentFailed,Cancelled,PendingPayment",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-07",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "D-07",
+   "description": "order status equals the lowest status of its non-cancelled items",
+   "expected": "0 violations",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-08",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "FR-13",
+   "description": "every placed order has a placedAt time and a succeeded payment",
+   "expected": "0 violations",
+   "actual": "0 of 14",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-09",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "FR-16",
+   "description": "every cancelled order has cancelledAt, all items Cancelled and its payment refunded or refund_pending",
+   "expected": "0 violations",
+   "actual": "1 cancelled",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-10",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "D-06",
+   "description": "every PaymentFailed order has a failure reason from the allowed list",
+   "expected": "valid",
+   "actual": "payment_failed,abandoned,stock_unavailable_refunded",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-11",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "D-06, A-13",
+   "description": "orders that failed for lack of stock after a late payment have a refunded payment",
+   "expected": "1 order(s), all refunded",
+   "actual": "1 refunded",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-12",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "VFR-08",
+   "description": "no payment document has a card-like field; only gateway references and amounts",
+   "expected": "0 card-like keys",
+   "actual": "37 payments scanned",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-13",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "FR-13",
+   "description": "payment amount equals the order total",
+   "expected": "0 differences",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-14",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "FR-13",
+   "description": "no gateway payment id is used by two payments",
+   "expected": "all unique",
+   "actual": "16 ids, 16 unique",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-15",
+   "section": "Orders and payments (FR-12, FR-13, VFR-08, VFR-14)",
+   "refs": "FR-15",
+   "description": "every order item carries title, ISBN and price snapshots",
+   "expected": "0 missing",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-16",
+   "section": "References, ownership and consistency",
+   "refs": "SDD 8.2",
+   "description": "every book references an existing seller and category",
+   "expected": "0 broken",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-17",
+   "section": "References, ownership and consistency",
+   "refs": "SDD 8.2",
+   "description": "every order item references an existing book and seller; the seller owns the book",
+   "expected": "0 broken",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-18",
+   "section": "References, ownership and consistency",
+   "refs": "FR-08",
+   "description": "carts: one per user, references exist, quantities 1 to 50",
+   "expected": "0 violations",
+   "actual": "176 carts",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-19",
+   "section": "References, ownership and consistency",
+   "refs": "FR-10",
+   "description": "wishlists: one per user, no duplicate books, references exist",
+   "expected": "0 violations",
+   "actual": "1 wishlists",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-20",
+   "section": "References, ownership and consistency",
+   "refs": "FR-17, FR-27",
+   "description": "the average rating and review count of every book that has reviews (or none) equals the stored reviews",
+   "expected": "0 differences",
+   "actual": "0 of 23 books",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-20b",
+   "section": "References, ownership and consistency",
+   "refs": "FR-07",
+   "description": "no book shows an average rating that is not backed by reviews",
+   "expected": "0 books",
+   "actual": "0 demo-data books show a rating (e.g. -) with 0 reviews: the seed script sets avgRating by hand",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-21",
+   "section": "References, ownership and consistency",
+   "refs": "FR-17",
+   "description": "one review per user and book; ratings 1 to 5",
+   "expected": "0 violations",
+   "actual": "0 reviews",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-22",
+   "section": "References, ownership and consistency",
+   "refs": "FR-19",
+   "description": "at most one pending application per user",
+   "expected": "max 1",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-23",
+   "section": "References, ownership and consistency",
+   "refs": "FR-19, D-04",
+   "description": "every approved applicant has roles customer + seller and a seller profile",
+   "expected": "true",
+   "actual": "true",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-24",
+   "section": "References, ownership and consistency",
+   "refs": "VFR-04",
+   "description": "every password is a bcrypt hash with cost >= 10; roles and status values are valid",
+   "expected": "valid",
+   "actual": "188 users",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-25",
+   "section": "References, ownership and consistency",
+   "refs": "FR-18",
+   "description": "no user has more than 5 addresses",
+   "expected": "max 5",
+   "actual": "2",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-26",
+   "section": "References, ownership and consistency",
+   "refs": "SDD 8.2, FR-03",
+   "description": "notifications never store secret tokens or links",
+   "expected": "0 matches",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-27",
+   "section": "References, ownership and consistency",
+   "refs": "FR-01, FR-03",
+   "description": "one-time tokens are stored only as 64-character hashes",
+   "expected": "all sha256",
+   "actual": "3 tokens",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-28",
+   "section": "Images (GridFS) and cleanup (D-09)",
+   "refs": "D-09",
+   "description": "every GridFS file has chunks, a known type and an owner",
+   "expected": "0 violations",
+   "actual": "3 files",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-29",
+   "section": "Images (GridFS) and cleanup (D-09)",
+   "refs": "D-09",
+   "description": "every listing has at most 3 images, all existing and owned by the listing seller",
+   "expected": "0 violations",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-30",
+   "section": "Images (GridFS) and cleanup (D-09)",
+   "refs": "D-09",
+   "description": "unattached images: those older than 24 hours would be removed by the hourly cleanup (cleanupOrphans)",
+   "expected": "none older than 24 h",
+   "actual": "2 unattached (all uploaded in the last hour); older than 24 h: 0. The deletion itself is covered by the automated test (media.test.js)",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-31",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 8.2",
+   "description": "the indexes of the data dictionary exist",
+   "expected": "0 missing",
+   "actual": "0 missing",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-32",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 8.2",
+   "description": "unique, sparse, partial and TTL flags",
+   "expected": "users.email unique; payments.gatewayPaymentId unique+sparse; seller_applications.userId unique+partial; auth_tokens.expiresAt TTL 0",
+   "actual": "{\"e\":true,\"g\":[true,true],\"p\":[true,true],\"t\":0}",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-33",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 8.2",
+   "description": "category names are unique ignoring case (collation strength 2)",
+   "expected": "strength 2",
+   "actual": "{\"locale\":\"en\",\"strength\":2}",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-34",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 8.2",
+   "description": "every index declared in the schemas exists in the database",
+   "expected": "0 missing",
+   "actual": "0 missing",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-35",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 8.3, TC-FR-30",
+   "description": "the database refuses stock -1, reserved above stock, and price 0",
+   "expected": "all three rejected",
+   "actual": "rejected (121); rejected (121); rejected (121)",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-36",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 4.3",
+   "description": "the database refuses duplicate user email, duplicate category name (any case), duplicate seller ISBN, duplicate gateway payment id, duplicate review",
+   "expected": "all rejected",
+   "actual": "rejected (11000); rejected (11000); rejected (11000); rejected (11000); rejected (11000) (temporary first review: accepted)",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-37",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 4.3",
+   "description": "the rejected writes changed nothing",
+   "expected": "unchanged",
+   "actual": "stock 25, reserved 0, price 39900",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-38",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "SDD 8.2",
+   "description": "the books collection has the stock/reserved/price validator",
+   "expected": "validator present",
+   "actual": "{\"$expr\":{\"$and\":[{\"$gte\":[\"$stock\",0]},{\"$gte\":[\"$reserved\",0]},{\"$lte\":[\"$rese",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-39",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "TC-VFR-14, SDD 8.4",
+   "description": "a forced failure inside a transaction rolls the whole change back",
+   "expected": "reserved unchanged",
+   "actual": "error \"forced failure\", reserved 0 -> 0",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-40",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "D-10, VFR-02",
+   "description": "the trigram search query uses the search index (no collection scan)",
+   "expected": "IXSCAN status_1_searchTrigrams_1, no COLLSCAN",
+   "actual": "IXSCAN",
+   "result": "PASS"
+  },
+  {
+   "id": "DB-41",
+   "section": "Indexes, uniqueness and validators (SDD 8.2, 8.4)",
+   "refs": "VFR-02",
+   "description": "the default browse (newest first) is answered from an index without an in-memory sort",
+   "expected": "IXSCAN, no SORT stage",
+   "actual": "index order",
+   "result": "PASS"
+  }
+ ]
+}
