@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ApiError, createApiClient } from '../api/ApiClient.js';
@@ -12,6 +12,8 @@ import { ReviewList } from '../modules/reviews/ReviewComponents.jsx';
 import { validateAddress, PaymentPage } from '../modules/checkout/CheckoutPages.jsx';
 import { validatePassword, EMAIL_PATTERN, RegisterPage } from '../modules/auth/AuthPages.jsx';
 import { RoleRoute } from '../auth/guards.jsx';
+import { AdminHome, PlatformReportPage } from '../modules/admin/AdminPages.jsx';
+import { SalesReportPage } from '../modules/seller/SellerPages.jsx';
 import * as AuthModule from '../auth/AuthContext.jsx';
 
 const json = (status, body) => ({
@@ -236,6 +238,75 @@ describe('payment page after a reload (S-11)', () => {
     await waitFor(() => expect(calls.some(([u, m]) => u === '/api/orders' && m === 'POST')).toBe(true));
     const post = calls.find(([u, m]) => u === '/api/orders' && m === 'POST');
     expect(JSON.parse(post[2])).toEqual({ shippingAddress: address });
+    fetchSpy.mockRestore();
+  });
+});
+
+const failure = (status = 500) => json(status, { error: { code: 'INTERNAL_ERROR', message: 'Something went wrong on our side.', details: [] } });
+
+describe('error, loading and retry states (S-23, S-24, S-29; TASK-05)', () => {
+  test('S-24: the dashboard shows an error with Try again and recovers; counts are not faked', async () => {
+    let healthy = false;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      if (url.startsWith('/api/admin/')) return healthy ? json(200, { items: [], totalItems: 3, page: 1, pageSize: 20 }) : failure();
+      return json(200, {});
+    });
+    render(<MemoryRouter><AdminHome /></MemoryRouter>);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not be loaded/i);
+    expect(screen.queryByText('0')).toBeNull();
+    healthy = true;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect((await screen.findAllByText('3')).length).toBe(2);
+    fetchSpy.mockRestore();
+  });
+
+  test.each([
+    ['S-29 platform report', PlatformReportPage, '/api/admin/reports/platform', { orderCount: 2, revenue: 12345, topBooks: [{ bookId: 'b', title: 'Dune', units: 2 }] }],
+    ['S-23 sales report', SalesReportPage, '/api/seller/reports/sales', { orderCount: 2, unitsSold: 3, revenue: 12345, byBook: [{ bookId: 'b', title: 'Dune', units: 3, revenue: 12345 }] }],
+  ])('%s: failure shows the error and Try again; no stale or fake success; retry works', async (_name, Page, endpoint, report) => {
+    let healthy = false;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => (url.startsWith(endpoint) ? (healthy ? json(200, report) : failure()) : json(200, {})));
+    render(<MemoryRouter><Page /></MemoryRouter>);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong on our side.');
+    expect(screen.queryByText(/Dune/)).toBeNull();
+    expect(screen.queryByText(/No sales in this period/)).toBeNull();
+    healthy = true;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText(/Dune/)).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    fetchSpy.mockRestore();
+  });
+
+  test('the report shows a loading state and ignores a second submit while loading (no duplicate request)', async () => {
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    const urls = [];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      if (url.startsWith('/api/admin/reports/platform')) { urls.push(url); await gate; return json(200, { orderCount: 0, revenue: 0, topBooks: [] }); }
+      return json(200, {});
+    });
+    render(<MemoryRouter><PlatformReportPage /></MemoryRouter>);
+    expect(await screen.findByRole('status')).toHaveTextContent(/Loading the report/);
+    const button = screen.getByRole('button', { name: 'Show report' });
+    expect(button).toBeDisabled();
+    await userEvent.click(button);
+    release();
+    expect(await screen.findByText('No sales in this period.')).toBeInTheDocument();
+    expect(urls).toHaveLength(1);
+    fetchSpy.mockRestore();
+  });
+
+  test('an invalid date range is explained without calling the API and without a retry button', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => json(200, { orderCount: 0, revenue: 0, topBooks: [] }));
+    render(<MemoryRouter><PlatformReportPage /></MemoryRouter>);
+    await screen.findByText('No sales in this period.');
+    const calls = fetchSpy.mock.calls.length;
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2999-01-01' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Show report' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/start date must not be after/i);
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(fetchSpy.mock.calls.length).toBe(calls);
     fetchSpy.mockRestore();
   });
 });
