@@ -1,0 +1,54 @@
+{
+ "name": "Rate limiting validation",
+ "total": 5,
+ "pass": 5,
+ "fail": 0,
+ "generatedAt": "2026-10-27T18:40:26.830Z",
+ "rows": [
+  {
+   "id": "RL-01",
+   "section": "Rate limiting (ST-23, VFR-06)",
+   "refs": "ST-23, VFR-06",
+   "description": "authentication endpoints are limited: the 21st login attempt in the window gets 429 (limit 20)",
+   "expected": "20 x 401 then 429",
+   "actual": "first 429 at attempt 21; 20 x 401, 5 x 429",
+   "result": "PASS"
+  },
+  {
+   "id": "RL-02",
+   "section": "Rate limiting (ST-23, VFR-06)",
+   "refs": "ST-23",
+   "description": "the 429 answer uses the uniform error body with RATE_LIMITED",
+   "expected": "429 { error: { code: RATE_LIMITED } }",
+   "actual": "429 {\"error\":{\"code\":\"RATE_LIMITED\",\"message\":\"Too many requests, please try again later\",\"det",
+   "result": "PASS"
+  },
+  {
+   "id": "RL-03",
+   "section": "Rate limiting (ST-23, VFR-06)",
+   "refs": "ST-23",
+   "description": "other authentication endpoints share the limit (register)",
+   "expected": "429",
+   "actual": "429",
+   "result": "PASS"
+  },
+  {
+   "id": "RL-04",
+   "section": "Rate limiting (ST-23, VFR-06)",
+   "refs": "ST-23, VFR-06",
+   "description": "the global API limit applies (limit 300 per window in this run)",
+   "expected": "200 x 300 (minus earlier requests), then 429",
+   "actual": "271 x 200, 49 x 429",
+   "result": "PASS"
+  },
+  {
+   "id": "RL-05",
+   "section": "Rate limiting (ST-23, VFR-06)",
+   "refs": "ST-23",
+   "description": "the service stays responsive for the health check while limited",
+   "expected": "process answers",
+   "actual": "429",
+   "result": "PASS"
+  }
+ ]
+}

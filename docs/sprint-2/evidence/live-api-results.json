@@ -1,0 +1,2322 @@
+{
+ "name": "Live API and workflow validation",
+ "total": 257,
+ "pass": 257,
+ "fail": 0,
+ "generatedAt": "2026-10-27T18:39:23.189Z",
+ "rows": [
+  {
+   "id": "AUTH-01",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01, UC-04",
+   "description": "register with valid data",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-02",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01",
+   "description": "duplicate email in different case is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 EMAIL_TAKEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-03",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01",
+   "description": "password of 7 characters is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-04",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01",
+   "description": "password of 8 characters is accepted",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-05",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01",
+   "description": "invalid email is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-06",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-29, ST-08",
+   "description": "mass assignment of roles at registration is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-07",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01, D-05",
+   "description": "login before the email is verified is refused",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 EMAIL_NOT_VERIFIED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-08",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01, UC-25",
+   "description": "verification email with a link is produced (console mailer)",
+   "expected": "link found in the server log",
+   "actual": "http://localhost:5173/verify-email?token=...",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-09",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "VFR-04, ST-01",
+   "description": "only a bcrypt hash with cost >= 10 is stored; no plaintext",
+   "expected": "hash $2?$>=10 and password absent",
+   "actual": "$2b$12$...",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-10",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01, ST-22",
+   "description": "verification token is stored hashed and expires in 24 hours",
+   "expected": "sha256 hash, ~24 h",
+   "actual": "64 hex chars, 24 h",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-11",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01, ST-22",
+   "description": "unknown verification token is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 TOKEN_INVALID_OR_EXPIRED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-12",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01, UC-04",
+   "description": "valid verification token activates the account",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-13",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-01, ST-22",
+   "description": "verification token cannot be used twice",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 TOKEN_INVALID_OR_EXPIRED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-14",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "ST-02",
+   "description": "wrong password and unknown email give identical answers",
+   "expected": "same status and body",
+   "actual": "401/401",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-15",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, D-03",
+   "description": "session cookie is HttpOnly, SameSite=Lax, 60 minutes",
+   "expected": "HttpOnly; SameSite=Lax; Max-Age=3600",
+   "actual": "session=...; Max-Age=3600; Path=/; Expires=Tue, 27 Oct 2026 19:37:10 GMT; HttpOnly; SameSite=Lax",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-16",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02",
+   "description": "session token lifetime is 60 minutes",
+   "expected": "3600 s",
+   "actual": "3600 s",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-17",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "VFR-04",
+   "description": "login response has no password data",
+   "expected": "no hash fields",
+   "actual": "{\"id\":\"6ae0ef541f9652a325eebebd\",\"name\":\"Valid Customer\",\"email\":\"cust.1793126227747.0@example.com\",\"roles\":[\"customer\"],\"status\":\"active\"}",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-18",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, UC-05",
+   "description": "GET /api/auth/me returns the user",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-19",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, UC-05",
+   "description": "logout",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-20",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, ST-05",
+   "description": "the old session token stops working after logout (token version)",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-21",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, ST-04, ST-05",
+   "description": "token signed with another key is refused",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-22",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, ST-04, ST-05",
+   "description": "token algorithm none is refused",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-23",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, ST-04, ST-05",
+   "description": "token expired 10 s ago (right key) is refused",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-24",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, ST-04, ST-05",
+   "description": "token wrong token version (right key) is refused",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-25",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-02, ST-04, ST-05",
+   "description": "token garbage is refused",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-26",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "VFR-07, ST-03",
+   "description": "5 failures, then the correct password is refused with 423 and Retry-After",
+   "expected": "401 x5, then 423 + Retry-After",
+   "actual": "401,401,401,401,401 then 423 retry-after=900",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-27",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "VFR-07",
+   "description": "unlock after 15 minutes",
+   "expected": "covered by the automated test with a controllable clock (auth.test.js, \"locks the account for 15 minutes\")",
+   "actual": "not observed live (15 minutes)",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-28",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03, ST-21",
+   "description": "forgot-password answers the same for known and unknown emails",
+   "expected": "same status and body",
+   "actual": "200/200",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-29",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03, UC-25",
+   "description": "reset email with a link is produced",
+   "expected": "link in the server log",
+   "actual": "found",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-30",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03, ST-21",
+   "description": "reset token lasts 30 minutes, is stored hashed, has >= 128 bits",
+   "expected": "30 min, sha256, 64 hex chars (256 bits)",
+   "actual": "30 min, 64 hex chars",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-31",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03",
+   "description": "new password under 8 characters is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-32",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03",
+   "description": "reset with a valid token",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-33",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03",
+   "description": "the reset token can be used only once",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 TOKEN_INVALID_OR_EXPIRED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-34",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03, ST-05",
+   "description": "all earlier sessions end after a reset",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-35",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03",
+   "description": "old password no longer works",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 INVALID_CREDENTIALS",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-36",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03",
+   "description": "new password works",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "AUTH-37",
+   "section": "1. Registration, email verification, login, session (UC-04, UC-05, FR-01, FR-02, FR-24, VFR-04, VFR-07)",
+   "refs": "FR-03",
+   "description": "reset link expires after 30 minutes",
+   "expected": "covered by the automated test with a controllable clock (auth.test.js, \"expires after 30 minutes\")",
+   "actual": "not observed live (30 minutes)",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-01",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "guest calls GET /api/cart",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-02",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "guest calls GET /api/orders",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-03",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "guest calls GET /api/admin/users",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-04",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "guest calls GET /api/seller/books",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-05",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "customer calls GET /api/admin/users",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-06",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "customer calls GET /api/seller/books",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-07",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "customer calls POST /api/seller/books",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-08",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "customer calls GET /api/seller/orders",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-09",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "customer calls DELETE /api/admin/reviews/:id",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-10",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "seller calls GET /api/admin/users",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-11",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "seller calls POST /api/admin/books/:id/approve",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-12",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "seller calls GET /api/admin/reports/platform",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-13",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "admin calls GET /api/cart",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-14",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "admin calls GET /api/seller/books",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-15",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "admin calls POST /api/orders",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-16",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "FR-29",
+   "description": "admin calls GET /api/profile",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-17",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-31, D-04",
+   "description": "seller account may use customer endpoints (cart)",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-18",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-31, D-04",
+   "description": "seller account may use seller endpoints (own listings)",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-19",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-07, FR-20",
+   "description": "seller edits another seller listing",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-20",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-07, FR-20",
+   "description": "seller removes another seller listing",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-21",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-07, FR-21",
+   "description": "seller changes another seller inventory",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-22",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-07",
+   "description": "the other seller data was not changed",
+   "expected": "price 25000, stock 10",
+   "actual": "{\"_id\":\"6ae0ef591f9652a325eebf1c\",\"price\":25000,\"stock\":10,\"status\":\"approved\"}",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-23",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-07, FR-18",
+   "description": "customer edits another customer's address",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-24",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-07, FR-18",
+   "description": "customer deletes another customer's address",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-25",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "profile update with extra field \"roles\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-26",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "profile update with extra field \"status\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-27",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "profile update with extra field \"passwordHash\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-28",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "profile update with extra field \"email\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-29",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "profile update with extra field \"tokenVersion\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-30",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "the user roles are unchanged after the mass-assignment attempts",
+   "expected": "customer",
+   "actual": "customer",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-31",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "listing with client-supplied sellerId is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-32",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "listing with client-supplied status approved is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-33",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "listing with client-supplied reserved is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "AZ-34",
+   "section": "2. Roles, ownership and access control (FR-29, UC-05 to UC-24, ST-06, ST-07, ST-08, ST-31)",
+   "refs": "ST-08",
+   "description": "listing with client-supplied searchText is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-01",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-04",
+   "description": "catalog page size is 20 and only approved listings appear",
+   "expected": "pageSize 20, items <= 20, all approved",
+   "actual": "pageSize 20, 14 items, 14 total",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-02",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-04",
+   "description": "a page beyond the last page is empty, not an error",
+   "expected": "200 with no items",
+   "actual": "HTTP 200, 0 items",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-03",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-05, A-14",
+   "description": "partial match, case-insensitive, middle of a word",
+   "expected": "'lpha b' finds Validation Alpha Book",
+   "actual": "[\"Validation Alpha Book\"]",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-04",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-05",
+   "description": "search by author",
+   "expected": "'fixture auth' finds the fixture books",
+   "actual": "2",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-05",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-05",
+   "description": "search by ISBN fragment and by hyphenated ISBN",
+   "expected": "finds Alpha",
+   "actual": "[1,1]",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-06",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-05",
+   "description": "1 and 2 character queries use prefix mode",
+   "expected": "'va' finds titles starting with Va",
+   "actual": "2",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-07",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-05, ST-10",
+   "description": "regex and operator characters are matched as text",
+   "expected": "no result, no error",
+   "actual": "[200,200,200,200]",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-08",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "ST-10",
+   "description": "query longer than 100 characters is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-09",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06",
+   "description": "filter by category, price range, minimum rating, language; sort by price",
+   "expected": "each filter narrows the result",
+   "actual": "[6,4,0,0]",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-10",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06",
+   "description": "price_asc sorts ascending",
+   "expected": "sorted",
+   "actual": "19900,24900,25000,25000,29900,35000",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-11",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06, TC-API",
+   "description": "invalid query \"sort=cheapest\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-12",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06, TC-API",
+   "description": "invalid query \"minRating=9\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-13",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06, TC-API",
+   "description": "invalid query \"page=0\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-14",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06, TC-API",
+   "description": "invalid query \"minPrice=-1\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-15",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06, TC-API",
+   "description": "invalid query \"category=zz\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-16",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-06, TC-API",
+   "description": "invalid query \"unknown=1\" is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-17",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "ST-09",
+   "description": "operator injection \"category[$ne]=x\" in the query string",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-18",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "ST-09",
+   "description": "operator injection \"q[$regex]=.*\" in the query string",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-19",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "ST-09",
+   "description": "operator injection \"q[$where]=1\" in the query string",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-20",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-07, UC-03",
+   "description": "book details contain title, author, ISBN, price, description, images, stock status, rating",
+   "expected": "all fields present",
+   "actual": "id,sellerId,title,author,isbn,price,description,categoryId,language,imageUrls,available,stockStatus,status,avgRating,reviewCount",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-21",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-07",
+   "description": "the public book shows no private stock numbers or search fields",
+   "expected": "no stock/reserved/searchText",
+   "actual": "none",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-22",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "FR-25, FR-07",
+   "description": "a pending listing is not visible (404)",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-23",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "TC-API-16",
+   "description": "unknown id is 404",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "CAT-24",
+   "section": "3. Catalog, search, filters (UC-01, UC-02, UC-03, FR-04 to FR-07)",
+   "refs": "TC-API-16",
+   "description": "malformed id is 400",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-01",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "add to cart",
+   "expected": "line with quantity 2",
+   "actual": "{\"q\":2,\"total\":50000}",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-02",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "adding the same book again combines the quantities",
+   "expected": "quantity 3",
+   "actual": "3",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-03",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-12",
+   "description": "summary: subtotal, 5 % tax rounded, flat shipping, total",
+   "expected": "75000 + 3750 + 4900 = 83650",
+   "actual": "{\"subtotal\":75000,\"tax\":3750,\"shippingFee\":4900,\"total\":83650}",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-04",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-09",
+   "description": "quantity above available stock (3 + 8 > 10) is refused with a message",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 INSUFFICIENT_STOCK",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-05",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-09",
+   "description": "the refusal message states the available number",
+   "expected": "message contains 'available'",
+   "actual": "Only 10 copies are available",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-06",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-09",
+   "description": "update to a quantity above stock is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 INSUFFICIENT_STOCK",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-7",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "quantity 0 is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-8",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "quantity 51 is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-9",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "quantity 1.5 is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-10",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "unapproved book cannot be added",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 BOOK_NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-11",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "removing a book that is not in the cart",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 ITEM_NOT_IN_CART",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-12",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-08",
+   "description": "the cart persists across logout and login",
+   "expected": "quantity 3 still there",
+   "actual": "3",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-13",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "D-06",
+   "description": "the cart does not reserve stock",
+   "expected": "reserved 0",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-14",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-10",
+   "description": "wishlist add",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-15",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-10",
+   "description": "adding twice keeps one entry",
+   "expected": "1 item",
+   "actual": "1",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-16",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-10",
+   "description": "wishlist remove",
+   "expected": "HTTP 204",
+   "actual": "HTTP 204",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-17",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-10",
+   "description": "removing an absent book is harmless",
+   "expected": "HTTP 204",
+   "actual": "HTTP 204",
+   "result": "PASS"
+  },
+  {
+   "id": "CART-18",
+   "section": "4. Cart and wishlist (UC-06, UC-07, FR-08, FR-09, FR-10, FR-12)",
+   "refs": "FR-10",
+   "description": "unapproved book cannot be wishlisted",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 BOOK_NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-01",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-11",
+   "description": "checkout without an address is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-02",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-11",
+   "description": "both addressId and shippingAddress is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-03",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-11",
+   "description": "another user's / unknown address is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-04",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-18",
+   "description": "client-supplied total/price is refused (the server computes totals)",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-05",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-30, D-06, UC-08",
+   "description": "checkout creates a PendingPayment order and a payment session",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-06",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-18, FR-12",
+   "description": "the order uses the current price (300.00 x 3), computed by the server",
+   "expected": "subtotal 90000, tax 4500, shipping 4900, total 99400",
+   "actual": "{\"subtotal\":90000,\"tax\":4500,\"shippingFee\":4900,\"total\":99400}",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-07",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "D-06, FR-30",
+   "description": "stock is reserved, not yet decremented",
+   "expected": "stock 10, reserved 3",
+   "actual": "stock 10, reserved 3",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-08",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "D-06",
+   "description": "reservation expiry is set (1 minute in this validation run)",
+   "expected": "about 60 s ahead",
+   "actual": "60 s",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-09",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-15",
+   "description": "a PendingPayment order is not in the order history",
+   "expected": "0 orders",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-10",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-13, ST-17",
+   "description": "a payment the gateway does not confirm is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 PAYMENT_VERIFICATION_FAILED",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-11",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-13",
+   "description": "the order stays PendingPayment and the reservation is kept",
+   "expected": "reserved 3",
+   "actual": "reserved 3",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-12",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-17, VFR-08",
+   "description": "forged payment id and signature are refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 PAYMENT_VERIFICATION_FAILED",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-13",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "VFR-08, ST-16",
+   "description": "card fields in the request are refused, not stored",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-14",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-07",
+   "description": "another customer cannot confirm this order",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-15",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-13, FR-30",
+   "description": "three simultaneous confirmations place the order once (idempotent)",
+   "expected": "all 200 Placed; stock 7, reserved 0",
+   "actual": "200,200,200; {\"_id\":\"6ae0ef591f9652a325eebf1c\",\"stock\":7,\"reserved\":0}",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-16",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-14, UC-25",
+   "description": "exactly one order confirmation email",
+   "expected": "1 email",
+   "actual": "1",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-17",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "VFR-08",
+   "description": "the payment record has gateway references only",
+   "expected": "no card-like field",
+   "actual": "[\"_id\",\"orderId\",\"gateway\",\"gatewayOrderId\",\"amount\",\"currency\",\"status\",\"createdAt\",\"updatedAt\",\"__v\",\"gatewayPaymentId\"]",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-18",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-13",
+   "description": "the cart is cleared after payment",
+   "expected": "empty",
+   "actual": "0",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-19",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-15, UC-10",
+   "description": "order history shows the placed order with status Placed",
+   "expected": "1 order, Placed",
+   "actual": "1 orders, Placed",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-20",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-07, FR-15",
+   "description": "another customer cannot read this order",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-21",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-07, FR-16",
+   "description": "another customer cannot cancel this order",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-22",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-17",
+   "description": "webhook without a signature",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 INVALID_SIGNATURE",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-23",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-17",
+   "description": "webhook with a signature for a different body",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 INVALID_SIGNATURE",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-24",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-17",
+   "description": "the refused webhooks changed nothing",
+   "expected": "reserved 1 for Beta",
+   "actual": "reserved 1",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-25",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-13, I-25",
+   "description": "signed payment.failed webhook is accepted",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-26",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "D-06",
+   "description": "a failed payment releases the reservation",
+   "expected": "reserved 0, order PaymentFailed",
+   "actual": "reserved 0, PaymentFailed",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-27",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "ST-17",
+   "description": "replaying the same webhook changes nothing",
+   "expected": "200, reserved still 0",
+   "actual": "HTTP 200, reserved 0",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-28",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-13",
+   "description": "a closed (PaymentFailed, not expired) order cannot be paid",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 ORDER_NOT_PAYABLE",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-29",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-16, D-06",
+   "description": "cancelling an unpaid order releases the reservation and makes no refund",
+   "expected": "PaymentFailed, reserved 0, refundStatus none",
+   "actual": "PaymentFailed, reserved 0, none",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-30",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-16",
+   "description": "cancelling twice is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 ORDER_NOT_CANCELLABLE",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-31",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-16",
+   "description": "cancelling a Placed order restores stock and refunds",
+   "expected": "Cancelled, refunded, stock +5",
+   "actual": "Cancelled, refunded, stock 5 -> 10",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-32",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-16",
+   "description": "the payment is marked refunded",
+   "expected": "refunded",
+   "actual": "refunded",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-33",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-30, D-06",
+   "description": "checkout when one of two lines is short is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 INSUFFICIENT_STOCK",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-34",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-30, VFR-14",
+   "description": "nothing is reserved for the other line (all or nothing) and no order exists",
+   "expected": "Alpha reserved unchanged (0), 0 orders",
+   "actual": "Alpha reserved 0, 0 orders",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-35",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "FR-30",
+   "description": "multi-item checkout reserves every line",
+   "expected": "two lines; Alpha +2, Scarce 2 reserved",
+   "actual": "2 lines; Alpha +2, Scarce 2",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-36",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "D-06",
+   "description": "a new checkout releases the same customer earlier unpaid order (one open checkout)",
+   "expected": "earlier order PaymentFailed / abandoned; its units released",
+   "actual": "PaymentFailed / abandoned; Scarce reserved 0",
+   "result": "PASS"
+  },
+  {
+   "id": "ORD-37",
+   "section": "5. Checkout, stock reservation, payment, orders (UC-08, UC-09, UC-10, UC-11, FR-11 to FR-16, FR-30, VFR-08, VFR-14)",
+   "refs": "D-06, FR-30",
+   "description": "re-starting the checkout while the customer's own open checkout holds the last copies succeeds (the earlier order is replaced)",
+   "expected": "201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "EXP-01",
+   "section": "6. Reservation expiry and late payment (D-06, A-13, FR-30)",
+   "refs": "D-06, I-27",
+   "description": "an unpaid reservation expires and the sweeper releases it",
+   "expected": "PaymentFailed / expired, reserved 0",
+   "actual": "PaymentFailed/expired, reserved 0, after 95 s",
+   "result": "PASS"
+  },
+  {
+   "id": "EXP-02",
+   "section": "6. Reservation expiry and late payment (D-06, A-13, FR-30)",
+   "refs": "D-06",
+   "description": "the second expired order is released too",
+   "expected": "expired, reserved 0",
+   "actual": "expired, reserved 0",
+   "result": "PASS"
+  },
+  {
+   "id": "EXP-03",
+   "section": "6. Reservation expiry and late payment (D-06, A-13, FR-30)",
+   "refs": "A-13, D-06",
+   "description": "late payment with stock still free re-reserves and places the order",
+   "expected": "Placed; stock 0, reserved 0",
+   "actual": "200 Placed; {\"_id\":\"6ae0ef5b1f9652a325eec159\",\"stock\":0,\"reserved\":0}",
+   "result": "PASS"
+  },
+  {
+   "id": "EXP-04",
+   "section": "6. Reservation expiry and late payment (D-06, A-13, FR-30)",
+   "refs": "A-13, D-06",
+   "description": "late payment when the stock is gone is refunded and the order fails (409 ORDER_FAILED_REFUNDED)",
+   "expected": "409; payment refunded; stock 0; not oversold",
+   "actual": "409 ORDER_FAILED_REFUNDED; payment refunded; {\"_id\":\"6ae0ef5b1f9652a325eec17c\",\"stock\":0,\"reserved\":0}",
+   "result": "PASS"
+  },
+  {
+   "id": "CON-01a",
+   "section": "7. Concurrent checkout (FR-30, ST-19, TC-FR-30, PT-04)",
+   "refs": "FR-30, ST-19",
+   "description": "20 buyers race for 5 copies: exactly 5 reservations, the rest told before payment",
+   "expected": "5 x 201, 15 x 409, 0 x 5xx, reserved 5",
+   "actual": "5 x 201, 15 x 409, 0 x 5xx, reserved 5",
+   "result": "PASS"
+  },
+  {
+   "id": "CON-01b",
+   "section": "7. Concurrent checkout (FR-30, ST-19, TC-FR-30, PT-04)",
+   "refs": "FR-30, VFR-14",
+   "description": "after payment, cancellation and abandonment the counts are consistent and never negative",
+   "expected": "stock 3, reserved 1",
+   "actual": "stock 3, reserved 1",
+   "result": "PASS"
+  },
+  {
+   "id": "CON-02a",
+   "section": "7. Concurrent checkout (FR-30, ST-19, TC-FR-30, PT-04)",
+   "refs": "FR-30, ST-19",
+   "description": "50 buyers race for 10 copies: exactly 10 reservations, the rest told before payment",
+   "expected": "10 x 201, 40 x 409, 0 x 5xx, reserved 10",
+   "actual": "10 x 201, 40 x 409, 0 x 5xx, reserved 10",
+   "result": "PASS"
+  },
+  {
+   "id": "CON-02b",
+   "section": "7. Concurrent checkout (FR-30, ST-19, TC-FR-30, PT-04)",
+   "refs": "FR-30, VFR-14",
+   "description": "after payment, cancellation and abandonment the counts are consistent and never negative",
+   "expected": "stock 6, reserved 3",
+   "actual": "stock 6, reserved 3",
+   "result": "PASS"
+  },
+  {
+   "id": "CON-03a",
+   "section": "7. Concurrent checkout (FR-30, ST-19, TC-FR-30, PT-04)",
+   "refs": "FR-30, ST-19",
+   "description": "100 buyers race for 10 copies: exactly 10 reservations, the rest told before payment",
+   "expected": "10 x 201, 90 x 409, 0 x 5xx, reserved 10",
+   "actual": "10 x 201, 90 x 409, 0 x 5xx, reserved 10",
+   "result": "PASS"
+  },
+  {
+   "id": "CON-03b",
+   "section": "7. Concurrent checkout (FR-30, ST-19, TC-FR-30, PT-04)",
+   "refs": "FR-30, VFR-14",
+   "description": "after payment, cancellation and abandonment the counts are consistent and never negative",
+   "expected": "stock 6, reserved 3",
+   "actual": "stock 6, reserved 3",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-01",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-19",
+   "description": "a customer cannot use seller endpoints before approval",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-02",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-19, UC-15",
+   "description": "seller application",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-03",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-19",
+   "description": "a second pending application is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 APPLICATION_EXISTS",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-04",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-19",
+   "description": "a customer cannot approve applications",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-05",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-25, UC-21",
+   "description": "administrator approves the application",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-06",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-25",
+   "description": "approving again is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 NOT_PENDING",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-07",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-19, D-04",
+   "description": "the approved seller keeps the customer role and the seller role takes effect at once",
+   "expected": "customer + seller",
+   "actual": "customer+seller",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-08",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-19, D-04",
+   "description": "the new seller can still use the cart",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-09",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20, UC-16",
+   "description": "create a listing",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-10",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-25",
+   "description": "a pending listing is not in the catalog",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-11",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "listing with invalid ISBN check digit is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-12",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "listing with price 0 is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-13",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "listing with negative stock is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-14",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "listing with empty title is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-15",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "listing with unknown category is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-16",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "D-11",
+   "description": "the same seller cannot reuse an ISBN",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 ISBN_EXISTS_FOR_SELLER",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-01",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20, D-09",
+   "description": "upload a PNG",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-02",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "upload a JPEG",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-03",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-24",
+   "description": "a script renamed to .png is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 INVALID_FILE",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-04",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-24",
+   "description": "an SVG with script is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 INVALID_FILE",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-05",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-24",
+   "description": "a Windows executable renamed to .jpg is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 INVALID_FILE",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-06",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-24",
+   "description": "a file name with path traversal is stored under a server-made name",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-07",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-24, D-09",
+   "description": "a file over 2 MB is refused with 413",
+   "expected": "HTTP 413",
+   "actual": "HTTP 413 FILE_TOO_LARGE",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-08",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "customer (not a seller) cannot upload",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-09",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-07, D-09",
+   "description": "the image downloads with the right type and long cache headers",
+   "expected": "200 image/png public max-age=31536000",
+   "actual": "200 image/png public, max-age=31536000, immutable",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-10",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "D-09",
+   "description": "files are in GridFS (fs.files) with the seller as owner and no client file name",
+   "expected": "every file has metadata.ownerId and a server-made name",
+   "actual": "3 files",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-11",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "D-09",
+   "description": "a listing can have at most 3 images",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-12",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-07",
+   "description": "another seller's image cannot be attached",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "IMG-13",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-20",
+   "description": "attach an own image to the listing",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-17",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-25, UC-21",
+   "description": "administrator approves the listing",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-18",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-25, FR-05",
+   "description": "the approved listing appears in the catalog search with its image",
+   "expected": "1 result with imageUrls",
+   "actual": "1 result(s), 1 image(s)",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-19",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "VFR-06",
+   "description": "HTML in the description is returned as plain text data",
+   "expected": "literal <b> in JSON",
+   "actual": "<b>Bold</b> text",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-20",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-21, UC-17",
+   "description": "inventory update shows available and in-stock status",
+   "expected": "stock 3, available 3",
+   "actual": "{\"stock\":3,\"available\":3,\"status\":\"In stock\"}",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-21",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-21, D-12",
+   "description": "a low-stock alert exists once the stock is at or below the threshold (4)",
+   "expected": "one unread alert",
+   "actual": "1 alert(s)",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-22",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-21",
+   "description": "mark the alert as read",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-23",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-07",
+   "description": "another seller cannot read this seller's alert",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-24",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-22, UC-18",
+   "description": "the seller sees only own items of a mixed order, with the shipping address",
+   "expected": "1 own item + shipping name",
+   "actual": "1 item(s): Seller Journey Book; ship to Val Idator",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-25",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-07",
+   "description": "the seller view contains no other seller title and no order total",
+   "expected": "absent",
+   "actual": "absent",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-26",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-22",
+   "description": "skipping a step (Placed to Shipped) is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 INVALID_STATUS_TRANSITION",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-27",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-22",
+   "description": "customer cannot change fulfilment status",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-28",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-07",
+   "description": "another seller cannot change this seller's item",
+   "expected": "HTTP 404",
+   "actual": "HTTP 404 NOT_FOUND",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-29",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-22",
+   "description": "Placed to Packed",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-30",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "D-07",
+   "description": "order status is the lowest item status: the other seller's item is still Placed",
+   "expected": "Placed",
+   "actual": "Placed",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-31",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-22",
+   "description": "Packed to Shipped",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-32",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-16",
+   "description": "a customer cannot cancel once an item has shipped",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 ORDER_NOT_CANCELLABLE",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-33",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-22",
+   "description": "Shipped to Delivered",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-34",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-22",
+   "description": "going back from Delivered is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 INVALID_STATUS_TRANSITION",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-35",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-23, UC-19",
+   "description": "sales report counts the seller own items only",
+   "expected": "orders 1, units 2, revenue 39900",
+   "actual": "{\"o\":1,\"u\":2,\"r\":39900}",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-36",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-23",
+   "description": "report range longer than 366 days is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 INVALID_DATE_RANGE",
+   "result": "PASS"
+  },
+  {
+   "id": "SEL-37",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-23",
+   "description": "report with from after to is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 INVALID_DATE_RANGE",
+   "result": "PASS"
+  },
+  {
+   "id": "REV-01",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-17, ST-20",
+   "description": "review without a delivered purchase is refused",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 NOT_ELIGIBLE",
+   "result": "PASS"
+  },
+  {
+   "id": "REV-02",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-17",
+   "description": "rating 0 and 6 are refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "REV-03",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-17, UC-12",
+   "description": "review after delivery",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "REV-04",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "FR-17",
+   "description": "the book average rating is updated",
+   "expected": "avgRating 4, reviewCount 1",
+   "actual": "{\"a\":4,\"c\":1}",
+   "result": "PASS"
+  },
+  {
+   "id": "REV-05",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-20",
+   "description": "a second review of the same book is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 ALREADY_REVIEWED",
+   "result": "PASS"
+  },
+  {
+   "id": "REV-06",
+   "section": "8. Seller journey: application, approval, listing, images, inventory, fulfilment (UC-15 to UC-19, UC-21, FR-19 to FR-23, FR-25)",
+   "refs": "ST-11, VFR-06",
+   "description": "the review comment is returned as inert JSON text",
+   "expected": "literal text",
+   "actual": "<img src=x onerror=alert(1)>",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-01",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-24, UC-20",
+   "description": "user list with search; no password data",
+   "expected": "found, no hash",
+   "actual": "1 user(s)",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-02",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-24",
+   "description": "administrator suspends a user",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-03",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-24, ST-29",
+   "description": "the suspended user session stops working at once",
+   "expected": "HTTP 401",
+   "actual": "HTTP 401 UNAUTHENTICATED",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-04",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-24, ST-29",
+   "description": "the suspended user cannot log in",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 ACCOUNT_SUSPENDED",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-05",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-24",
+   "description": "reactivation",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-06",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-24",
+   "description": "the user can log in again",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-07",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-24, ST-29",
+   "description": "administrator cannot suspend themselves",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 CANNOT_MODIFY_SELF",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-08",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-25",
+   "description": "rejection needs a reason",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-09",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-25",
+   "description": "administrator rejects with a reason",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-10",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-19",
+   "description": "the rejected applicant stays a customer and sees the reason",
+   "expected": "customer, rejected, reason",
+   "actual": "[\"customer\",\"rejected\"]",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-11",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-25",
+   "description": "administrator rejects a listing with a reason",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-12",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-25",
+   "description": "a decided listing cannot be decided again",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 NOT_PENDING",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-13",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-26, UC-23",
+   "description": "add a category",
+   "expected": "HTTP 201",
+   "actual": "HTTP 201",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-14",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-26",
+   "description": "duplicate name in another case is refused",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 CATEGORY_EXISTS",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-15",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-26",
+   "description": "rename",
+   "expected": "HTTP 200",
+   "actual": "HTTP 200",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-16",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-26",
+   "description": "a category with books cannot be deleted",
+   "expected": "HTTP 409",
+   "actual": "HTTP 409 CATEGORY_IN_USE",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-17",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-26",
+   "description": "delete an unused category",
+   "expected": "HTTP 204",
+   "actual": "HTTP 204",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-18",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-27, UC-22",
+   "description": "administrator lists reviews of a book",
+   "expected": "1 review",
+   "actual": "1",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-19",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-27",
+   "description": "administrator removes the review",
+   "expected": "HTTP 204",
+   "actual": "HTTP 204",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-20",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-27",
+   "description": "the average rating is recalculated",
+   "expected": "avgRating 0, count 0",
+   "actual": "{\"a\":0,\"c\":0}",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-21",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-27",
+   "description": "customers cannot remove reviews",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 FORBIDDEN",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-22",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-28, UC-24",
+   "description": "platform report has order count, revenue and at most 10 top books",
+   "expected": "orders > 0, revenue > 0, topBooks <= 10",
+   "actual": "{\"o\":14,\"rev\":572495,\"top\":8}",
+   "result": "PASS"
+  },
+  {
+   "id": "ADM-23",
+   "section": "9. Administrator journey (UC-20 to UC-24, FR-24 to FR-28)",
+   "refs": "FR-28",
+   "description": "invalid report range is refused",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 INVALID_DATE_RANGE",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-01",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-23",
+   "description": "malformed JSON",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-02",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "TC-API",
+   "description": "missing required fields name the field",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-03",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-23",
+   "description": "oversized JSON body",
+   "expected": "HTTP 413",
+   "actual": "HTTP 413 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-04",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-23",
+   "description": "deeply nested object with operator keys",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-05",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-09",
+   "description": "NoSQL operator objects as credentials",
+   "expected": "HTTP 400",
+   "actual": "HTTP 400 VALIDATION_ERROR",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-06",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "TC-API",
+   "description": "unknown API route gives the uniform error body",
+   "expected": "404 NOT_FOUND",
+   "actual": "404 {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Route not found\",\"details\":[]}}",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-07",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "TC-API",
+   "description": "CSRF header missing on a state-changing call",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 CSRF_INVALID",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-08",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-13",
+   "description": "wrong CSRF token",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 CSRF_INVALID",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-09",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-13",
+   "description": "cookie only (cross-site form post): no header",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 CSRF_INVALID",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-10",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-13",
+   "description": "CSRF also applies to PATCH, PUT and DELETE",
+   "expected": "HTTP 403",
+   "actual": "HTTP 403 CSRF_INVALID",
+   "result": "PASS"
+  },
+  {
+   "id": "ERR-11",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-28",
+   "description": "error bodies contain no stack trace or file path",
+   "expected": "none",
+   "actual": "none",
+   "result": "PASS"
+  },
+  {
+   "id": "SEC-01",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-15",
+   "description": "security headers present: CSP, nosniff, frame protection, referrer policy, no X-Powered-By",
+   "expected": "all present",
+   "actual": "content-security-policy:y x-content-type-options:y x-frame-options:y referrer-policy:y x-powered-by:absent",
+   "result": "PASS"
+  },
+  {
+   "id": "SEC-02",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-11, VFR-06",
+   "description": "CSP: scripts only from 'self', no inline scripts, no framing, no plugins",
+   "expected": "script-src 'self'; frame-ancestors 'none'; object-src 'none'",
+   "actual": "default-src 'self';script-src 'self';script-src-attr 'none';style-src 'self';font-src 'self';img-src 'self' data:;connect-src 'self';form-action 'self';base-uri 'self';frame-ancestors 'none';object-src 'none'",
+   "result": "PASS"
+  },
+  {
+   "id": "SEC-03",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "VFR-08, VFR-04, ST-01",
+   "description": "the request log contains no passwords, tokens, cookies, card numbers or query strings",
+   "expected": "none of the test secrets",
+   "actual": "1035 request lines scanned",
+   "result": "PASS"
+  },
+  {
+   "id": "SEC-04",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "VFR-08",
+   "description": "no password or card number appears anywhere in the structured log",
+   "expected": "absent",
+   "actual": "checked",
+   "result": "PASS"
+  },
+  {
+   "id": "SEC-05",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-30, FR-24",
+   "description": "audit entries (login failure, lockout, role change, suspension, refund) are logged with ids",
+   "expected": "audit:* lines present",
+   "actual": "audit:login_failed,audit:account_locked,audit:password_reset,audit:refund,audit:seller_application_approve,audit:user_status_changed,audit:seller_application_reject",
+   "result": "PASS"
+  },
+  {
+   "id": "SEC-06",
+   "section": "10. Error handling, headers, logs (VFR-06, VFR-08, ST-15, ST-23, ST-28)",
+   "refs": "ST-27, VFR-04",
+   "description": "no .env file or secret is tracked in git",
+   "expected": "only .env.example",
+   "actual": ".env.example",
+   "result": "PASS"
+  },
+  {
+   "id": "HLT-01",
+   "section": "11. Health endpoint (VFR-09, I-26)",
+   "refs": "VFR-09, API-61",
+   "description": "GET /api/health with the database up",
+   "expected": "200 { status ok, db up }",
+   "actual": "200 {\"status\":\"ok\",\"db\":\"up\",\"uptimeSeconds\":153,\"time\":\"2026-10-27T18:39:23.187Z\"}",
+   "result": "PASS"
+  }
+ ]
+}
