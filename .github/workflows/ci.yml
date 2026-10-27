@@ -23,3 +23,7 @@ jobs:
         run: npm run test:client
       - name: Client build
         run: npm run build
+      - name: OpenAPI contract is valid
+        run: node server/scripts/validate-openapi.mjs
+      - name: Runtime dependency audit (high and critical)
+        run: npm audit --omit=dev --audit-level=high
