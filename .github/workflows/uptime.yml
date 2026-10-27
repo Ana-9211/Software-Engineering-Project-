@@ -1,0 +1,24 @@
+name: Uptime check
+
+# Calls the health endpoint of the deployed application every 5 minutes (VFR-09). The call also keeps a
+# free web service awake (keep-alive). It does nothing until the repository variable DEPLOY_URL is set to
+# the public https address (Settings > Secrets and variables > Actions > Variables).
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    if: ${{ vars.DEPLOY_URL != '' }}
+    steps:
+      - name: GET /api/health
+        env:
+          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+        run: |
+          set -e
+          code=$(curl -s -o health.json -w '%{http_code} %{time_total}s' --max-time 60 --retry 2 --retry-delay 10 "$DEPLOY_URL/api/health")
+          echo "$(date -u +%FT%TZ) $code"
+          cat health.json
+          case "$code" in 200*) ;; *) exit 1;; esac
