@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { catalogApi, sellerApi } from '../../api/endpoints.js';
-import { useFetch } from '../../components/useFetch.js';
-import { Async, ErrorMessage } from '../../components/states.jsx';
+import { useFetch, useReport } from '../../components/useFetch.js';
+import { Async, ErrorMessage, Loading } from '../../components/states.jsx';
 import { Field, SelectField, TextArea, TextField } from '../../components/Field.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
@@ -418,21 +418,7 @@ export function SellerOrdersPage() {
 
 // S-23 Sales report (UC-19, FR-23)
 export function SalesReportPage() {
-  const [range, setRange] = useState({ from: today().slice(0, 8) + '01', to: today() });
-  const [report, setReport] = useState({ data: null, error: null, loading: false });
-
-  async function run(e) {
-    e && e.preventDefault();
-    if (range.from > range.to) return setReport({ data: null, error: { message: 'The start date must not be after the end date.' }, loading: false });
-    setReport({ data: null, error: null, loading: true });
-    try {
-      setReport({ data: await sellerApi.salesReport(range.from, range.to), error: null, loading: false });
-    } catch (err) {
-      setReport({ data: null, error: err, loading: false });
-    }
-    return undefined;
-  }
-  useEffect(() => { run(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const { range, setRange, report, run } = useReport(sellerApi.salesReport, { from: today().slice(0, 8) + '01', to: today() });
 
   const d = report.data;
   return (
@@ -441,12 +427,13 @@ export function SalesReportPage() {
       <form onSubmit={run} className="row" noValidate>
         <TextField label="From" type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} max={range.to} />
         <TextField label="To" type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} min={range.from} />
-        <button type="submit" className="btn btn-primary">Show report</button>
+        <button type="submit" className="btn btn-primary" disabled={report.loading}>Show report</button>
       </form>
-      <ErrorMessage error={report.error} />
+      {report.loading && !d && <Loading label="Loading the report" />}
+      <ErrorMessage error={report.error} onRetry={report.retryable ? run : undefined} />
       {d && (
         <>
-          <div className="stat-grid">
+          <div className="stat-grid" aria-busy={report.loading}>
             <div className="stat"><strong>{d.orderCount}</strong><span>orders</span></div>
             <div className="stat"><strong>{d.unitsSold}</strong><span>books sold</span></div>
             <div className="stat"><strong>{formatMoney(d.revenue)}</strong><span>revenue</span></div>

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminApi, catalogApi } from '../../api/endpoints.js';
-import { useFetch } from '../../components/useFetch.js';
-import { Async, ErrorMessage } from '../../components/states.jsx';
+import { useFetch, useReport } from '../../components/useFetch.js';
+import { Async, ErrorMessage, Loading } from '../../components/states.jsx';
 import { TextField } from '../../components/Field.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
@@ -15,12 +15,16 @@ import { formatDate, formatMoney, today } from '../../utils/format.js';
 export function AdminHome() {
   const apps = useFetch(() => adminApi.applications({ status: 'pending' }), []);
   const books = useFetch(() => adminApi.books({ status: 'pending' }), []);
+  const error = apps.error || books.error;
+  const reloadAll = () => { if (apps.error) apps.reload(); if (books.error) books.reload(); };
+  const count = (q) => (q.data ? q.data.totalItems : q.loading ? '...' : '-');
   return (
     <section>
       <h1>Administrator dashboard</h1>
+      <ErrorMessage error={error && { message: 'The waiting counts could not be loaded. ' + (error.message || '') }} onRetry={reloadAll} />
       <div className="stat-grid">
-        <Link to="/admin/approvals" className="stat"><strong>{apps.data ? apps.data.totalItems : '-'}</strong><span>seller applications waiting</span></Link>
-        <Link to="/admin/approvals" className="stat"><strong>{books.data ? books.data.totalItems : '-'}</strong><span>listings waiting</span></Link>
+        <Link to="/admin/approvals" className="stat"><strong>{count(apps)}</strong><span>seller applications waiting</span></Link>
+        <Link to="/admin/approvals" className="stat"><strong>{count(books)}</strong><span>listings waiting</span></Link>
         <Link to="/admin/users" className="stat"><strong>Users</strong><span>suspend or reactivate accounts</span></Link>
         <Link to="/admin/reviews" className="stat"><strong>Reviews</strong><span>moderate reviews</span></Link>
         <Link to="/admin/categories" className="stat"><strong>Categories</strong><span>add, rename, delete</span></Link>
@@ -327,20 +331,7 @@ export function CategoriesPage() {
 
 // S-29 Platform reports (UC-24, FR-28)
 export function PlatformReportPage() {
-  const [range, setRange] = useState({ from: today().slice(0, 8) + '01', to: today() });
-  const [report, setReport] = useState({ data: null, error: null });
-
-  async function run(e) {
-    e && e.preventDefault();
-    if (range.from > range.to) return setReport({ data: null, error: { message: 'The start date must not be after the end date.' } });
-    try {
-      setReport({ data: await adminApi.platformReport(range.from, range.to), error: null });
-    } catch (err) {
-      setReport({ data: null, error: err });
-    }
-    return undefined;
-  }
-  useEffect(() => { run(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const { range, setRange, report, run } = useReport(adminApi.platformReport, { from: today().slice(0, 8) + '01', to: today() });
 
   const d = report.data;
   return (
@@ -349,12 +340,13 @@ export function PlatformReportPage() {
       <form onSubmit={run} className="row" noValidate>
         <TextField label="From" type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} max={range.to} />
         <TextField label="To" type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} min={range.from} />
-        <button type="submit" className="btn btn-primary">Show report</button>
+        <button type="submit" className="btn btn-primary" disabled={report.loading}>Show report</button>
       </form>
-      <ErrorMessage error={report.error} />
+      {report.loading && !d && <Loading label="Loading the report" />}
+      <ErrorMessage error={report.error} onRetry={report.retryable ? run : undefined} />
       {d && (
         <>
-          <div className="stat-grid">
+          <div className="stat-grid" aria-busy={report.loading}>
             <div className="stat"><strong>{d.orderCount}</strong><span>orders</span></div>
             <div className="stat"><strong>{formatMoney(d.revenue)}</strong><span>revenue</span></div>
           </div>
