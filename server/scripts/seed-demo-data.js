@@ -43,12 +43,12 @@ const BOOKS = [
   await upsertUser('customer@bookstore.local', 'Demo Customer', ['customer']);
 
   let created = 0;
-  for (const [title, author, isbn, price, cat, language, stock, avgRating] of BOOKS) {
+  for (const [title, author, isbn, price, cat, language, stock] of BOOKS) {
     if (await Book.exists({ sellerId: seller._id, isbn })) continue;
     await Book.create({
       sellerId: seller._id, title, author, isbn, price, description: `${title} by ${author}.`,
       categoryId: categories[cat]._id, language, stock, reserved: 0, lowStockThreshold: 5,
-      status: 'approved', avgRating, reviewCount: 0, ...buildSearchFields(title, author, isbn),
+      status: 'approved', avgRating: 0, reviewCount: 0, ...buildSearchFields(title, author, isbn), // ratings come only from real reviews (DEF-03)
     });
     created += 1;
   }

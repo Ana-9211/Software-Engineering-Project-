@@ -61,6 +61,7 @@ function build(env = process.env) {
     rateLimitGlobal: int('RATE_LIMIT_GLOBAL', isTest ? 100000 : 300),
     rateLimitAuth: int('RATE_LIMIT_AUTH', isTest ? 100000 : 20),
     reservationMinutes: int('RESERVATION_MINUTES', 15),
+    catalogCountTtlMs: int('CATALOG_COUNT_TTL_MS', isTest ? 0 : 10000), // how long a catalogue total is reused (VFR-02)
     logLevel: env.LOG_LEVEL || (isTest ? 'silent' : 'info'),
     clientDist: env.CLIENT_DIST || '',
     // used only by the seed-admin script (Phase 1 has no use case that creates administrators)

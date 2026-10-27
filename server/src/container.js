@@ -9,7 +9,7 @@ const { createPasswordService } = require('./modules/auth/password.service');
 const { createAuthService } = require('./modules/auth/auth.service');
 const { notificationRepository } = require('./modules/notification/notification.repository');
 const { createNotificationService } = require('./modules/notification/notification.service');
-const { bookRepository } = require('./modules/catalog/book.repository');
+const { bookRepository, setCountCacheTtl } = require('./modules/catalog/book.repository');
 const { categoryRepository } = require('./modules/catalog/category.repository');
 const { createCatalogService } = require('./modules/catalog/catalog.service');
 const { createMediaService } = require('./modules/media/media.service');
@@ -31,6 +31,7 @@ const { createAdminService } = require('./modules/admin/admin.service');
 const { createReportingService } = require('./modules/reporting/reporting.service');
 
 function createContainer({ config, clock, gateway, mailer, retryDelaysMs }) {
+  setCountCacheTtl(config.catalogCountTtlMs || 0);
   const userService = createUserService({ repo: userRepository });
   const tokenService = createTokenService({ config });
   const passwordService = createPasswordService({ config });
