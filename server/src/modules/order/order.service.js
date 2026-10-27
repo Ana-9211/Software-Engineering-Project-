@@ -88,19 +88,25 @@ function createOrderService({ repo, cartService, inventoryService, paymentServic
 
   // Close an unpaid order and release its reserved units, in one transaction. Safe to call twice:
   // only the call that flips PendingPayment -> PaymentFailed releases the units.
-  async function releaseOrder(order, reason) {
-    return withTransaction(async (session) => {
-      const closed = await repo.closeUnpaid(order._id, reason, { session });
-      if (!closed) return false;
-      await inventoryService.releaseReservation(closed.items, session);
-      await paymentService.markFailed(order._id, { session });
-      return true;
-    });
+  async function releaseInSession(order, reason, session) {
+    const closed = await repo.closeUnpaid(order._id, reason, { session });
+    if (!closed) return false;
+    await inventoryService.releaseReservation(closed.items, session);
+    await paymentService.markFailed(order._id, { session });
+    return true;
   }
 
-  // a customer has at most one open checkout; starting a new one releases the earlier one
-  async function releaseOpenCheckouts(userId) {
-    for (const open of await repo.findOpenCheckouts(userId)) await releaseOrder(open, 'abandoned');
+  async function releaseOrder(order, reason) {
+    return withTransaction((session) => releaseInSession(order, reason, session));
+  }
+
+  // units per book that the customer's open checkouts hold (a customer has at most one open checkout)
+  function heldUnits(openCheckouts) {
+    const held = new Map();
+    for (const open of openCheckouts) {
+      for (const item of open.items) held.set(String(item.bookId), (held.get(String(item.bookId)) || 0) + item.quantity);
+    }
+    return held;
   }
 
   async function resolveAddress(userId, input) {
@@ -173,9 +179,10 @@ function createOrderService({ repo, cartService, inventoryService, paymentServic
 
     // API-27: reserve stock atomically, create the order, then create the payment session
     async createOrder(userId, input) {
-      const cart = await cartService.getValidatedCart(userId); // 400 if empty, 409 if a line is short
+      const openCheckouts = await repo.findOpenCheckouts(userId);
+      // 400 if empty, 409 if a line is short; the customer's own held units count as available (DEF-01)
+      const cart = await cartService.getValidatedCart(userId, heldUnits(openCheckouts));
       const shippingAddress = await resolveAddress(userId, input);
-      await releaseOpenCheckouts(userId);
 
       const now = clock.now();
       const items = cart.items.map((line) => ({
@@ -190,7 +197,10 @@ function createOrderService({ repo, cartService, inventoryService, paymentServic
       }));
       const summary = cartService.computeSummary(items);
 
+      // The earlier checkout is replaced in the same transaction as the new reservation, so a failed
+      // new checkout leaves the earlier one (and its hold) untouched.
       const order = await withTransaction(async (session) => {
+        for (const open of openCheckouts) await releaseInSession(open, 'abandoned', session);
         await inventoryService.reserve(items, session); // all lines or none
         return repo.create(
           {

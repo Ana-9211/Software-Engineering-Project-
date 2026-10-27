@@ -93,10 +93,17 @@ function createCartService({ cartRepo, bookRepo, config }) {
       return publicView(await buildView(await cartRepo.findByUser(userId)));
     },
 
-    // I-07: the checkout reads the cart and requires every line to be available right now
-    async getValidatedCart(userId) {
+    // I-07: the checkout reads the cart and requires every line to be available right now.
+    // `held` maps bookId -> units the customer already holds in an open checkout that this checkout
+    // replaces (SDD 4.3, D-06); those units count as available to the same customer (DEF-01).
+    async getValidatedCart(userId, held = new Map()) {
       const view = await buildView(await cartRepo.findByUser(userId));
       if (view.items.length === 0) throw new AppError('VALIDATION_ERROR', 400, 'Your cart is empty', [{ field: 'cart', issue: 'empty' }]);
+      for (const line of view.items) {
+        const own = held.get(line.bookId) || 0;
+        line.availableUnits += own;
+        line.available = line.availableUnits >= line.quantity;
+      }
       const short = view.items.find((i) => !i.available);
       if (short) throw insufficient(short.availableUnits);
       return view;

@@ -121,6 +121,62 @@ describe('checkout reserves stock (D-06, FR-30, FR-11, FR-12)', () => {
     expect(old).toMatchObject({ status: 'PaymentFailed', failureReason: 'abandoned' });
   });
 
+  test('a customer who holds the last copies can restart the checkout (DEF-01)', async () => {
+    const book = await newBook({ stock: 2 });
+    const a = await buyerWithCart([[book, 2]]);
+    const first = await checkout(a.api);
+    expect(first.status).toBe(201);
+    expect(await stockOf(book)).toMatchObject({ stock: 2, reserved: 2 });
+    const second = await checkout(a.api);
+    expect(second.status).toBe(201);
+    expect(second.body.order.id).not.toBe(first.body.order.id);
+    expect(await stockOf(book)).toMatchObject({ stock: 2, reserved: 2 }); // held once, not twice
+    expect(await ctx.models.Order.findById(first.body.order.id)).toMatchObject({ status: 'PaymentFailed', failureReason: 'abandoned' });
+    const paid = await paySuccess(a.api, second);
+    expect(paid.status).toBe(200);
+    expect(await stockOf(book)).toMatchObject({ stock: 0, reserved: 0 });
+  });
+
+  test('restart is refused beyond held plus free units and keeps the earlier hold (DEF-01, FR-30)', async () => {
+    const book = await newBook({ stock: 3 });
+    const a = await buyerWithCart([[book, 2]]);
+    const first = await checkout(a.api);
+    const other = await buyerWithCart([[book, 1]]);
+    expect((await checkout(other.api)).status).toBe(201); // takes the last free copy
+    expect(await stockOf(book)).toMatchObject({ stock: 3, reserved: 3 });
+    // raise the quantity above what the customer holds: 3 wanted, 2 held, 0 free
+    expect((await a.api.patch(`/api/cart/items/${book._id}`, { quantity: 3 })).status).toBe(409);
+    await ctx.models.Cart.updateOne({ userId: a.user._id, 'items.bookId': book._id }, { $set: { 'items.$.quantity': 3 } });
+    const second = await checkout(a.api);
+    expect(second.status).toBe(409);
+    expect(second.body.error.code).toBe('INSUFFICIENT_STOCK');
+    // the failed attempt must not release the earlier checkout
+    expect(await ctx.models.Order.findById(first.body.order.id)).toMatchObject({ status: 'PendingPayment' });
+    expect(await stockOf(book)).toMatchObject({ stock: 3, reserved: 3 });
+  });
+
+  test('a failed address or gateway error on restart leaves the earlier checkout open (DEF-01)', async () => {
+    const book = await newBook({ stock: 2 });
+    const a = await buyerWithCart([[book, 2]]);
+    const first = await checkout(a.api);
+    const bad = await a.api.post('/api/orders', { addressId: '64b000000000000000000000' });
+    expect(bad.status).toBe(400);
+    expect(await ctx.models.Order.findById(first.body.order.id)).toMatchObject({ status: 'PendingPayment' });
+    expect(await stockOf(book)).toMatchObject({ reserved: 2 });
+  });
+
+  test('two simultaneous restarts by the same customer end with exactly one open checkout (DEF-01)', async () => {
+    const book = await newBook({ stock: 2 });
+    const a = await buyerWithCart([[book, 2]]);
+    await checkout(a.api);
+    const results = await Promise.all([checkout(a.api), checkout(a.api)]);
+    expect(results.some((r) => r.status === 201)).toBe(true);
+    const open = await ctx.models.Order.countDocuments({ userId: a.user._id, status: 'PendingPayment' });
+    const reserved = (await stockOf(book)).reserved;
+    expect(reserved).toBe(open * 2);
+    expect(reserved).toBeLessThanOrEqual(2);
+  });
+
   test('gateway failure at checkout releases the reservation and returns 502', async () => {
     const book = await newBook();
     const a = await buyerWithCart([[book, 2]]);
