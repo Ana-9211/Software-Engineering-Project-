@@ -103,6 +103,20 @@ describe('XSS and output handling (VFR-06)', () => {
     expect(csp).toMatch(/object-src 'none'/);
   });
 
+  test('CSP has no wildcard or unsafe-inline source and the extra headers are set (TASK-07, DEF-07, DEF-08)', async () => {
+    const res = await client(ctx.app).get('/api/health');
+    const csp = res.headers['content-security-policy'];
+    expect(csp).not.toMatch(/unsafe-inline|unsafe-eval|\*|https:|http:/);
+    for (const directive of ['default-src', 'script-src', 'style-src', 'font-src', 'img-src', 'connect-src', 'form-action', 'base-uri']) {
+      expect(csp).toMatch(new RegExp(`${directive} 'self'`));
+    }
+    expect(csp).toMatch(/script-src-attr 'none'/);
+    expect(res.headers['permissions-policy']).toMatch(/camera=\(\)/);
+    expect(res.headers['permissions-policy']).toMatch(/geolocation=\(\)/);
+    expect(res.headers['cross-origin-embedder-policy']).toBe('require-corp');
+    expect(res.headers['cross-origin-opener-policy']).toBe('same-origin');
+  });
+
   test('security headers are present and the server does not announce itself', async () => {
     const res = await client(ctx.app).get('/api/health');
     expect(res.headers['x-content-type-options']).toBe('nosniff');
