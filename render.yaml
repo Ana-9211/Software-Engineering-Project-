@@ -18,6 +18,8 @@ services:
         generateValue: true
       - key: PAYMENT_PROVIDER     # fake = the test gateway; there is no real provider yet
         value: fake
+      - key: PAYMENT_KEY_SECRET
+        generateValue: true
       - key: PAYMENT_WEBHOOK_SECRET
         generateValue: true
       - key: MAIL_PROVIDER        # console = emails are printed to the service log, nothing is delivered

@@ -12,3 +12,6 @@ backups
 **/.env.*
 !**/.env.example
 **/coverage
+**/.env
+**/.env.*
+coverage
