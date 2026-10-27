@@ -11,6 +11,7 @@ const { createMailer } = require('./adapters/mail');
 const { createContainer } = require('./container');
 
 const { helmetConfig, permissionsPolicy } = require('./middleware/helmetConfig');
+const { httpsRedirect } = require('./middleware/httpsRedirect');
 const { requestLogger } = require('./middleware/requestLogger');
 const { createRateLimiter } = require('./middleware/rateLimiter');
 const { sanitize } = require('./middleware/sanitize');
@@ -52,7 +53,10 @@ function createApp(overrides = {}) {
 
   const app = express();
   app.disable('x-powered-by');
-  if (config.isProd) app.set('trust proxy', 1); // TLS ends at the hosting platform
+  if (config.isProd) {
+    app.set('trust proxy', 1); // TLS ends at the hosting platform
+    app.use(httpsRedirect);
+  }
   app.use(helmetConfig);
   app.use(permissionsPolicy);
   app.use(compression());

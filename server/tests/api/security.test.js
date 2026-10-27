@@ -286,3 +286,30 @@ describe('health and availability (VFR-09, API-61)', () => {
     expect(typeof res.body.uptimeSeconds).toBe('number');
   });
 });
+
+describe('HTTPS redirect in production (VFR-05)', () => {
+  const express = require('express');
+  const request = require('supertest');
+  const { httpsRedirect } = require('../../src/middleware/httpsRedirect');
+  const prodApp = () => {
+    const app = express();
+    app.set('trust proxy', 1);
+    app.use(httpsRedirect);
+    app.get('/api/health', (req, res) => res.json({ ok: true }));
+    app.get('/api/books', (req, res) => res.json({ secure: req.secure }));
+    return app;
+  };
+
+  test('plain HTTP is redirected (308) to the same address over HTTPS, query string kept', async () => {
+    const res = await request(prodApp()).get('/api/books?q=a').set('Host', 'shop.example.com').set('X-Forwarded-Proto', 'http');
+    expect(res.status).toBe(308);
+    expect(res.headers.location).toBe('https://shop.example.com/api/books?q=a');
+  });
+
+  test('requests that arrived over HTTPS pass through, and the health probe is exempt', async () => {
+    const app = prodApp();
+    expect((await request(app).get('/api/books').set('X-Forwarded-Proto', 'https')).body).toEqual({ secure: true });
+    expect((await request(app).get('/api/health').set('X-Forwarded-Proto', 'http')).status).toBe(200);
+  });
+});
+
