@@ -1,0 +1,34 @@
+[
+ {
+  "label": "live warm run 1",
+  "books": 12,
+  "users": 20,
+  "thinkMs": 1000,
+  "requests": 100,
+  "errors": 0,
+  "errorRate": "0.00%",
+  "seconds": 9.9,
+  "throughputRps": 10.1,
+  "p50ms": 622.9,
+  "p95ms": 1875.8,
+  "p99ms": 2516.5,
+  "maxMs": 2516.5,
+  "at": "2026-10-28T03:20:28.364Z"
+ },
+ {
+  "label": "live warm run 2",
+  "books": 12,
+  "users": 20,
+  "thinkMs": 1000,
+  "requests": 100,
+  "errors": 0,
+  "errorRate": "0.00%",
+  "seconds": 9.7,
+  "throughputRps": 10.3,
+  "p50ms": 617.8,
+  "p95ms": 1349.6,
+  "p99ms": 2269.8,
+  "maxMs": 2269.8,
+  "at": "2026-10-28T03:20:40.025Z"
+ }
+]

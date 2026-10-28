@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-28T03:19Z",
+  "target": "https://online-bookstore-zux7.onrender.com",
+  "healthStatus": 200,
+  "healthBody": { "status": "ok", "db": "up" },
+  "booksReturned": 12,
+  "homePageServesReactApp": true,
+  "strictTransportSecurity": "max-age=31536000; includeSubDomains",
+  "contentSecurityPolicyPresent": true,
+  "permissionsPolicyPresent": true,
+  "plainHttpRequest": { "status": 301, "location": "https://online-bookstore-zux7.onrender.com/api/books" },
+  "healthRoundTripMs": { "min": 534, "median": 610, "max": 1023, "samples": 8, "note": "from the author's laptop, includes the network path" }
+}
