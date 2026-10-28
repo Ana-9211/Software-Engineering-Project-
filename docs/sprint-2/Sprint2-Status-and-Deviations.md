@@ -15,19 +15,19 @@ All numbers below were measured on one Windows laptop (Intel Core i7-13700H, 16 
 | TASK-05 (DEF-04, 05) | Admin dashboard and report screens: error state with retry | Fixed (`fix/task-05-error-states`) | Client tests 23 to 28. |
 | TASK-06 (DEF-06) | Webhook response schema equals the SDD | Fixed (`fix/task-06-webhook-schema`) | `docs/sprint-2/openapi.yaml` changes only that response; a test checks nothing else differs. |
 | TASK-07 (DEF-07, 08) | Tighter CSP, Permissions-Policy | Fixed (`fix/task-07-csp-permissions-policy`) | `security.test.js`. |
-| VFR-01 | Page load 3 s or less, p95 | Met for one user | Lighthouse (mobile emulation, slow 4G), largest paint 1.4 to 2.1 s on 11 pages. Not measured under 100 concurrent browsers. |
-| VFR-02 | Search and browse 500 ms or less, p95 | Fixed (`perf/vfr-02-catalog-p95`) | 10,000 books, 100 users, 1 s think time, separate load process. Before: p95 228, 401, 255 ms. After: p95 87, 64, 91 ms. |
-| VFR-03 | 100 users, error rate under 1 % | Met | 0.00 % errors in all 6 runs above (3000 requests each). |
-| VFR-05 | HTTPS | Fixed in code (`feat/task-08-deploy-config`); live check needs the deployment | Redirect test with `X-Forwarded-Proto`. TLS version cannot be tested locally. |
+| VFR-01 | Page load 3 s or less, p95 | Met for one user, laptop and live | Laptop: Lighthouse mobile largest paint 1.4 to 2.1 s on 11 pages. Live (free tier, 3 pages): mobile largest paint 1.6 to 1.8 s, desktop 0.6 to 1.2 s (`evidence/live-lighthouse-results.json`). Not measured with 100 concurrent browsers, and not as a p95 over many page loads. |
+| VFR-02 | Search and browse 500 ms or less, p95 | Met on the laptop; **not met on the live site as measured** | Laptop (fix in `perf/vfr-02-catalog-p95`, 10,000 books): p95 87, 64, 91 ms, before the fix 228, 401, 255 ms. Live: p95 1876 and 1350 ms, median about 620 ms, measured from the author's laptop (section 6). The median is close to the plain network round trip to the service (about 610 ms for the health check), so most of it is distance and not catalog work, but the requirement was not shown to hold on the live site. |
+| VFR-03 | 100 users, error rate under 1 % | Met on the laptop; live only partly tested | Laptop: 0.00 % errors in 6 runs of 3000 requests at 100 users. Live: 0.00 % errors at 20 users (2 runs of 100 requests); 100 users were not tried on the free instance. |
+| VFR-05 | HTTPS | Met on the live site (headers and redirect); TLS version not checked | Live: HTTPS works, plain HTTP gets a 301 to HTTPS, `Strict-Transport-Security: max-age=31536000; includeSubDomains`, CSP and Permissions-Policy present (`evidence/live-health-and-headers.json`). The TLS protocol version was not inspected. |
 | VFR-06 | Injection, XSS, CSRF protection | Met, plus `fix/runtime-dependency-audit` | `npm audit --omit=dev`: 2 high and 2 moderate advisories before, 0 after. CI now fails on high advisories. |
 | VFR-07 | Lockout after 5 failures | Met | Live check AUTH-26, clock-controlled test. |
 | VFR-08 | No card data stored or logged | Met | Live checks ORD-13, ORD-17, DB-12. |
-| VFR-09 | 99 % availability, checks every 5 minutes | Partly met | `.github/workflows/uptime.yml` (5-minute check, also keep-alive) is ready; it starts when the repository variable `DEPLOY_URL` is set. No availability window has run yet. |
+| VFR-09 | 99 % availability, checks every 5 minutes | Partly met | `.github/workflows/uptime.yml` runs every 5 minutes against `$DEPLOY_URL/api/health`. The health endpoint answers 200 (checked once, about 5 minutes after a restart). Whether the variable `DEPLOY_URL` is set and what the scheduled runs show was not checked from here; no availability percentage has been measured. |
 | VFR-10 | Responsive 360 to 1920 px | Met | `e2e.mjs` steps at 360 and 1920 px. |
-| VFR-11 | Lighthouse accessibility 90 or more | Met | Score 100 on all 11 pages (`evidence/lighthouse-results.json`); axe step in `e2e.mjs`; keyboard checks 7 of 7. |
+| VFR-11 | Lighthouse accessibility 90 or more | Met on the laptop and live | Laptop: 100 on 11 pages. Live: 100 on the home, catalog and book pages, mobile and desktop. |
 | VFR-12 | Latest 2 versions of Chrome, Firefox, Edge, Safari | Partly met | Edge and Chrome driven by the scripts; Safari and older versions not tested. |
 | VFR-14 | Transactional orders, daily backup | Partly met | Transaction tests pass. `server/scripts/backup-db.js` backs up, restores and verifies; a local rehearsal restored 13 collections with matching counts. A daily schedule exists only after deployment. |
-| TASK-08 | Deploy, monitor, keep-alive, re-run performance | Prepared, not done | Dockerfile, `render.yaml`, uptime workflow. Needs the owner's Render and Atlas accounts. |
+| TASK-08 | Deploy, monitor, keep-alive, re-run performance | Deployed; monitor and performance partly done | Live at https://online-bookstore-zux7.onrender.com with Atlas; guide in `docs/sprint-2/deployment.md`. The performance re-run was small (section 6). The monitor needs the `DEPLOY_URL` variable and its first runs checked. |
 | TASK-09 | 2-minute video | Done | `docs/demo/sprint2-demo.mp4` (121 s), made by `docs/demo/record-sprint2-demo.mjs`. |
 | TASK-10 | Final documentation, freeze | Documentation done; the freeze is a manual step (section 4) | |
 
@@ -53,11 +53,11 @@ To run the browser walkthrough locally the global rate limit must be raised (`RA
 | 9 | OpenAPI | `docs/sprint-2/openapi.yaml` is a copy of the approved file with one change (webhook 200 response). The Phase 2 file is untouched. | Keeps the approved document as submitted and records the change (DEF-06). |
 | 10 | SDD (security headers) | CSP no longer allows `https:` sources; `style-src` is tightened; Permissions-Policy and Cross-Origin-Embedder-Policy are added. | ZAP findings DEF-07 and DEF-08. |
 | 11 | SDD (catalog read) | The list endpoint reads plain objects and caches the page total for a few seconds. | VFR-02: p95 was above 500 ms in the earlier measurement. |
-| 12 | Deployment | The planned public service still uses the fake payment gateway and the console mailer, so no real payment or e-mail happens and e-mail links appear in the service log. It must be presented as a demo. | No provider was chosen (deviation 4). |
+| 12 | Deployment | The public service (free Render instance) uses the fake payment gateway and the console mailer, so no real payment or e-mail happens and e-mail links appear in the service log. It must be presented as a demo. | No provider was chosen (deviation 4). |
 | 13 | CI | Two steps added: OpenAPI validation and `npm audit --omit=dev --audit-level=high`. | VFR-15 and VFR-06. |
 | 14 | Dependencies | Lock file updated for body-parser and multer. | Two high advisories. |
 
-Deviation 5 (HTTPS, hosting, monitor, backups not set up) stays open until the deployment exists.
+Deviation 5 is partly closed: HTTPS and hosting exist (section 6). The uptime monitor needs the `DEPLOY_URL` variable, and backups are manual with no daily schedule.
 
 ## 4. Freeze steps (TASK-10), for the repository owner
 
@@ -70,3 +70,34 @@ Deviation 5 (HTTPS, hosting, monitor, backups not set up) stays open until the d
 ## 5. Traceability
 
 Requirement to issue: `docs/backlog/backlog.csv`. Requirement to test: Phase 3 notes (server tests) and `docs/sprint-2/evidence/live-api-results.md` (check IDs such as AUTH-26, ORD-13). Defect to fix: section 1 above.
+
+## 6. Deployed results (live site)
+
+Target: https://online-bookstore-zux7.onrender.com, measured on 28 October 2026 from the author's laptop, over the public internet only. The service runs on the Render free tier with a MongoDB Atlas free cluster and holds the demo data (12 books). A cold start after idle takes about 50 seconds; the measurements below were taken after the instance was awake (a warm-up request was sent first), so they do not include a cold start.
+
+| Measure | Laptop (local database, 10,000 books) | Live (free tier, 12 books) |
+|---|---|---|
+| Load test | 100 users, 3000 requests, p50 22 to 24 ms, p95 64 to 91 ms, p99 396 to 683 ms, 0.00 % errors, about 95 requests/s | 20 users, 100 requests per run, two runs: p50 623 and 618 ms, p95 1876 and 1350 ms, p99 2517 and 2270 ms, 0.00 % errors, about 10 requests/s |
+| Round trip of `/api/health` | not applicable | min 534, median 610, max 1023 ms (8 requests) |
+| Lighthouse performance | 83 to 100 on 11 pages (mobile) | mobile 97 home, 98 catalog, 95 book; desktop 97, 93, 92 |
+| Lighthouse accessibility | 100 on 11 pages | 100 on all 6 runs |
+| Lighthouse best practices / SEO | not recorded for SEO | best practices 96 on all 6 runs; SEO 91 on all 6 runs |
+
+How to read this:
+- The live load test is a polite, small profile on purpose (a free instance, and a limit of 300 requests per 15 minutes per IP). With 100 samples per run the p95 is rough. It is not the 100-user, 10,000-book scenario, so it does not replace the laptop figures and the two columns are not comparable.
+- The live median of about 620 ms is about the same as the plain network round trip, so the catalog work itself is small. The p95 of 1.3 to 1.9 s is above the 500 ms target. The requirement is not demonstrated on the live site.
+- Lighthouse was run once per page and form factor with Lighthouse 12.8.2 (the catalog desktop run failed once and was repeated). Mobile uses the default emulation.
+
+Rate limit: the login limit is 20 per 15 minutes per IP and gave a 429 at the 21st attempt on the laptop (`evidence/rate-limit-results.md`). On the live site 22 wrong logins with a valid CSRF token all returned 401 and no 429 appeared (`evidence/live-rate-limit-results.json`). The limit was therefore **not observed on the live site**. Likely causes were not verified: the limit counting per proxy address instead of per visitor (`trust proxy` is 1, and Render places more than one hop in front of the app), or a different value of `RATE_LIMIT_AUTH` in the service settings. Checking the Render environment and the client address the app sees is open. The global limit of 300 was not tested.
+
+Raw files, all in `docs/sprint-2/evidence/` with the prefix `live-`: `live-loadtest-results.json`, `live-lighthouse-results.json`, `live-rate-limit-results.json`, `live-health-and-headers.json`.
+
+## 7. Still open
+
+- VFR-12: only Edge and Chrome were driven by scripts. Firefox, Safari and older browser versions were not tested for Sprint 2 (an earlier Phase 4 draft ran Firefox on the laptop; it is not part of this evidence).
+- VFR-14: no daily backup schedule; backups are run by hand (`deployment.md`, section 7). A restore from Atlas has not been rehearsed.
+- VFR-09: set `DEPLOY_URL`, then read the first scheduled runs of the Uptime check workflow and record the result; no availability figure exists yet.
+- VFR-02 and VFR-03 on the live site: not shown at the target; a repeat from a closer location, or against a paid instance with the 10,000-book data, would be needed.
+- Login rate limit on the live site: see section 6.
+- FR-13 and FR-14 still use the fake gateway and console mailer (deviation 4).
+
