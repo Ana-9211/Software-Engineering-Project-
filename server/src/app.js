@@ -13,7 +13,7 @@ const { createContainer } = require('./container');
 const { helmetConfig, permissionsPolicy } = require('./middleware/helmetConfig');
 const { httpsRedirect } = require('./middleware/httpsRedirect');
 const { requestLogger } = require('./middleware/requestLogger');
-const { createRateLimiter } = require('./middleware/rateLimiter');
+const { createRateLimiter, createAccountLimiter } = require('./middleware/rateLimiter');
 const { sanitize } = require('./middleware/sanitize');
 const { csrfProtection } = require('./middleware/csrfProtection');
 const { createAuthGuard } = require('./middleware/authGuard');
@@ -49,12 +49,13 @@ function createApp(overrides = {}) {
 
   const authGuard = createAuthGuard({ tokenService: container.tokenService, userService: container.userService });
   const authLimiter = createRateLimiter({ limit: config.rateLimitAuth });
+  const accountLimiter = createAccountLimiter({ limit: config.rateLimitAccount });
   const globalLimiter = createRateLimiter({ limit: config.rateLimitGlobal });
 
   const app = express();
   app.disable('x-powered-by');
   if (config.isProd) {
-    app.set('trust proxy', 1); // TLS ends at the hosting platform
+    app.set('trust proxy', config.trustProxyHops); // TLS ends at the hosting platform
     app.use(httpsRedirect);
   }
   app.use(helmetConfig);
@@ -73,7 +74,7 @@ function createApp(overrides = {}) {
   app.use('/api', csrfProtection);
 
   const authController = createAuthController({ authService: container.authService, config });
-  app.use('/api/auth', createAuthRouter({ controller: authController, authGuard, authLimiter }));
+  app.use('/api/auth', createAuthRouter({ controller: authController, authGuard, authLimiter, accountLimiter }));
 
   const userController = createUserController({ userService: container.userService });
   app.use('/api/profile', createUserRouter({ controller: userController, authGuard }));

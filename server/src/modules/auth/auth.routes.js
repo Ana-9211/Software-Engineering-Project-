@@ -11,7 +11,7 @@ const email = Joi.string().trim().email({ tlds: { allow: false } }).max(254);
 const oneTimeToken = Joi.string().min(32).max(128);
 
 // API-01 to API-09
-function createAuthRouter({ controller, authGuard, authLimiter }) {
+function createAuthRouter({ controller, authGuard, authLimiter, accountLimiter = (req, res, next) => next() }) {
   const router = express.Router();
 
   router.get('/csrf-token', controller.csrfToken);
@@ -22,16 +22,17 @@ function createAuthRouter({ controller, authGuard, authLimiter }) {
     controller.register
   );
   router.post('/verify-email', validate({ body: { token: oneTimeToken.required() } }), controller.verifyEmail);
-  router.post('/resend-verification', authLimiter, validate({ body: { email: email.required() } }), controller.resendVerification);
+  router.post('/resend-verification', authLimiter, accountLimiter, validate({ body: { email: email.required() } }), controller.resendVerification);
   router.post(
     '/login',
     authLimiter,
+    accountLimiter,
     validate({ body: { email: email.required(), password: Joi.string().min(1).max(72).required() } }),
     controller.login
   );
   router.post('/logout', authGuard, controller.logout);
   router.get('/me', authGuard, controller.me);
-  router.post('/forgot-password', authLimiter, validate({ body: { email: email.required() } }), controller.forgotPassword);
+  router.post('/forgot-password', authLimiter, accountLimiter, validate({ body: { email: email.required() } }), controller.forgotPassword);
   router.post(
     '/reset-password',
     validate({ body: { token: oneTimeToken.required(), newPassword: password.required() } }),
