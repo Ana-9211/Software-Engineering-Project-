@@ -26,6 +26,8 @@ Set in the Render dashboard. Never commit values.
 | `MAIL_PROVIDER` | `console`: e-mails are written to the service log. |
 | `APP_BASE_URL` | The public https address, used in e-mail links. |
 | `RATE_LIMIT_GLOBAL`, `RATE_LIMIT_AUTH` | 300 and 20 requests per 15 minutes per IP. |
+| `RATE_LIMIT_ACCOUNT` | Failed login attempts per e-mail address per window (10 on the live site). |
+| `TRUST_PROXY_HOPS` | Number of proxy layers in front of the app (1 on Render). |
 | `CLIENT_DIST` | Set inside the Docker image. |
 
 ## 3. Redeploy
@@ -70,4 +72,4 @@ node scripts/backup-db.js restore <backupDir> [dbName]
 - The free Render instance sleeps after about 15 minutes without traffic. The first request after that takes about 50 seconds. The uptime workflow reduces this but does not remove it.
 - Free tiers: shared CPU, a 512 MB class instance and a 512 MB Atlas M0 cluster. Results are specific to this setup.
 - The fake gateway never charges anyone and the console mailer delivers nothing, so verification and order e-mails exist only in the service log, with their links.
-- The login and global rate limits are per IP. See the open item in `Sprint2-Status-and-Deviations.md` about the login limit not being observed on the live site.
+- The global and `RATE_LIMIT_AUTH` limits are per IP. Failed logins are also limited per e-mail address (`RATE_LIMIT_ACCOUNT=10`); this was observed on the live site after PR #79 (`evidence/live-rate-limit-after-fix.md`, one run from one browser). The forgot-password and resend-verification routes rely on the per-address limiter only, because their success responses are not counted by the account limiter.
