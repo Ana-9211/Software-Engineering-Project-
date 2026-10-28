@@ -60,6 +60,8 @@ function build(env = process.env) {
     appBaseUrl: env.APP_BASE_URL || 'http://localhost:5173',
     rateLimitGlobal: int('RATE_LIMIT_GLOBAL', isTest ? 100000 : 300),
     rateLimitAuth: int('RATE_LIMIT_AUTH', isTest ? 100000 : 20),
+    rateLimitAccount: int('RATE_LIMIT_ACCOUNT', isTest ? 100000 : 10), // failed attempts per e-mail address per window
+    trustProxyHops: int('TRUST_PROXY_HOPS', 1), // proxy layers in front of the app (hosting platform dependent)
     reservationMinutes: int('RESERVATION_MINUTES', 15),
     catalogCountTtlMs: int('CATALOG_COUNT_TTL_MS', isTest ? 0 : 10000), // how long a catalogue total is reused (VFR-02)
     logLevel: env.LOG_LEVEL || (isTest ? 'silent' : 'info'),
