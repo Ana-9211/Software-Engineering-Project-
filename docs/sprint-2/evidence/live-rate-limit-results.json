@@ -1,0 +1,31 @@
+{
+ "at": "2026-10-28T03:24:45.588Z",
+ "target": "https://online-bookstore-zux7.onrender.com",
+ "note": "wrong logins for an address that does not exist; limit is 20 per 15 min per IP",
+ "attempts": 22,
+ "statuses": [
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401,
+  401
+ ],
+ "first429Attempt": 0
+}
