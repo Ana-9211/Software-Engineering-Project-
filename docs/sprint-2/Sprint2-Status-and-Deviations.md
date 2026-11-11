@@ -29,13 +29,13 @@ All numbers below were measured on one Windows laptop (Intel Core i7-13700H, 16 
 | VFR-14 | Transactional orders, daily backup | Partly met | Transaction tests pass. `server/scripts/backup-db.js` backs up, restores and verifies; a local rehearsal restored 13 collections with matching counts. A daily schedule exists only after deployment. |
 | TASK-08 | Deploy, monitor, keep-alive, re-run performance | Deployed; monitor and performance partly done | Live at https://online-bookstore-zux7.onrender.com with Atlas; guide in `docs/sprint-2/deployment.md`. The performance re-run was small (section 6). The monitor needs the `DEPLOY_URL` variable and its first runs checked. |
 | TASK-09 | 2-minute video | Done | `docs/demo/sprint2-demo.mp4` (121 s), made by `docs/demo/record-sprint2-demo.mjs`. |
-| TASK-10 | Final documentation, freeze | Documentation done; the freeze is a manual step (section 4) | |
+| TASK-10 | Final documentation, freeze | Done. The tag `sprint-2-freeze` marks the frozen state of `main` (section 4) | `git ls-remote --tags origin` |
 
 ## 2. Test results on the integrated Sprint 2 code
 
 | Check | Result |
 |---|---|
-| Server tests (`npm test`) | 526 passed |
+| Server tests (`npm test`) | 531 passed (13 suites; re-run on the final code, coverage: lines 96.29 %, statements 94.3 %, branches 80.54 %) |
 | Client tests (`npm run test:client`) | 28 passed |
 | Lint | 0 errors |
 | Browser walkthrough (`node e2e/e2e.mjs`) | 41 of 41 steps |
@@ -56,16 +56,20 @@ To run the browser walkthrough locally the global rate limit must be raised (`RA
 | 12 | Deployment | The public service (free Render instance) uses the fake payment gateway and the console mailer, so no real payment or e-mail happens and e-mail links appear in the service log. It must be presented as a demo. | No provider was chosen (deviation 4). |
 | 13 | CI | Two steps added: OpenAPI validation and `npm audit --omit=dev --audit-level=high`. | VFR-15 and VFR-06. |
 | 14 | Dependencies | Lock file updated for body-parser and multer. | Two high advisories. |
+| 15 | Dependencies | After the freeze tag, the lock file was updated again (mongoose to 8.24.8, joi to 18.3.2). Dependencies in `package.json` are unchanged. | New advisories published after the freeze made the CI audit step (`npm audit --omit=dev --audit-level=high`) fail. The server tests, client tests, lint, build and OpenAPI check pass on the updated lock file. |
 
 Deviation 5 is partly closed: HTTPS and hosting exist (section 6). The uptime monitor needs the `DEPLOY_URL` variable, and backups are manual with no daily schedule.
 
-## 4. Freeze steps (TASK-10), for the repository owner
+## 4. Freeze
 
-1. Merge the Sprint 2 pull requests and make sure CI is green on the default branch.
-2. Settings > Branches: add a rule for `phase-1-requirements` that requires a pull request and a passing check and does not allow bypassing. Do the same for `main` if it is used.
-3. Tag the final state: `git tag sprint-2-final && git push origin sprint-2-final`.
-4. Close the finished issues and move them to Done on the project board.
-5. Agree in the team chat that nothing is merged after the freeze.
+The development freeze is the tag `sprint-2-freeze`, which points at the merge of pull request #80 on `main` (commit `e35334d`). Only the changes listed as deviation 15 and the documentation updates that describe them were made after it, and they are labelled as such.
+
+Steps the repository owner keeps for the freeze:
+
+1. Merge pull requests only with a passing CI check; the default branch must stay green.
+2. Settings > Branches: a rule for the default branch that requires a pull request and a passing check and does not allow bypassing.
+3. Close the finished issues and move them to Done on the project board.
+4. Agree in the team chat that nothing is merged after the freeze.
 
 ## 5. Traceability
 
