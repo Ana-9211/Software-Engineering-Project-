@@ -50,5 +50,7 @@ The same steps, plus a runtime dependency audit, run in GitHub Actions on every 
 | Backlog (55 items) and sprint plan | `docs/backlog/` |
 | Sprint 1 status, deviations and video | `docs/sprint-1/`, `docs/demo/sprint1-demo.mp4` |
 | Sprint 2 status, evidence, deviations, deployment guide and video | `docs/sprint-2/`, `docs/demo/sprint2-demo.mp4` |
+| Test reports: unit, system validation, code coverage, branch coverage | `docs/reports/` |
+| Demo cheat sheet: deviations and open items | `docs/demo/Demo-Cheat-Sheet.md` |
 
 Layout: `server/` (Express API), `client/` (React app), `e2e/` and `validation/` (browser walkthrough, load, accessibility and API check scripts).
