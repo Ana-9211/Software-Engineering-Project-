@@ -30,3 +30,7 @@ services:
         value: "300"
       - key: RATE_LIMIT_AUTH
         value: "20"
+      - key: RATE_LIMIT_ACCOUNT
+        value: "10"
+      - key: TRUST_PROXY_HOPS
+        value: "1"
