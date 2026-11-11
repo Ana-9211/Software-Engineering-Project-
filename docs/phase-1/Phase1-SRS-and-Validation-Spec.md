@@ -19,7 +19,7 @@ Software Requirements Specification and Validation Specification (Planning)
 | **Course** | Software Engineering |
 | **Technology Stack** | MERN (MongoDB, Express.js, React, Node.js) |
 | **Repository** | https://github.com/Ana-9211/Software-Engineering-Project- |
-| **Document Version** | 1.0 (Phase 1 submission) |
+| **Document Version** | 1.1 (Phase 1 submission, with the Section 10 security section and the Section 11 IEEE mapping added) |
 
 <div style="page-break-after: always;"></div>
 
@@ -482,3 +482,68 @@ This section plans how the requirements will be validated. It contains no test r
 | Entry | The requirement is approved, has a unique ID and has a verification method. |
 | Exit | All Must requirements verified as met; all Should requirements verified or formally deferred with justification; no open critical or high severity defects. |
 | Defect handling | Defects are recorded with severity and the affected requirement ID. |
+
+<div style="page-break-after: always;"></div>
+
+# 10. Security Objectives and Security Requirements
+
+This section collects the security content of the SRS in one place. It adds no new requirement IDs: the security requirements are the existing ones in Section 4 (VFR-04 to VFR-08, plus FR-02, FR-03, FR-24, FR-29), so the counts in Section 3.2 are unchanged. Security is validated as planned in Section 9.4.
+
+## 10.1 Security Objectives
+
+| ID | Objective | Property | What it protects against |
+|---|---|---|---|
+| SO-01 | Only the legitimate owner of an account can use it. | Confidentiality, authenticity | Password theft from a data leak, guessing and brute-force attacks, stolen or never-expiring sessions |
+| SO-02 | Data exchanged between browser and server cannot be read or altered on the network. | Confidentiality, integrity | Eavesdropping and tampering on the network |
+| SO-03 | Every function and every record is available only to the roles that are allowed to use it. | Confidentiality, integrity | Privilege escalation, a customer using seller or administrator functions, access to other users' data |
+| SO-04 | Untrusted input and cross-site requests cannot change the behaviour of the system or its data. | Integrity | Injection, cross-site scripting, cross-site request forgery |
+| SO-05 | Payment card data is never held by the system. | Confidentiality | Disclosure of card numbers from the database, the logs or backups |
+| SO-06 | The service stays usable and abuse is limited. | Availability | Repeated login attempts, request flooding, an unnoticed outage |
+
+## 10.2 Security Requirements and Traceability to Objectives
+
+| Requirement | Statement (see Section 4 for the full text) | Objective(s) | Pri | Method | Planned test case |
+|---|---|---|---|---|---|
+| VFR-04 | Passwords are stored only as salted bcrypt hashes with cost factor 10 or higher. | SO-01 | M | I | TC-VFR-04 |
+| VFR-07 | The account is locked for 15 minutes after 5 consecutive failed logins. | SO-01, SO-06 | S | T | TC-VFR-07 |
+| FR-02 | A session token expires after 60 minutes. | SO-01 | M | T | TC-FR-02 |
+| FR-03 | A password reset link is valid for 30 minutes and can be used once. | SO-01 | S | T | TC-FR-03 |
+| VFR-05 | All client-server traffic uses HTTPS (TLS 1.2 or higher). | SO-02 | M | T, I | TC-VFR-05 |
+| FR-29 | Role-based access: each role reaches only the functions of its own role. | SO-03 | M | T | TC-FR-29 |
+| FR-24 | A suspended user cannot log in. | SO-03 | M | T | TC-FR-24 |
+| FR-19 | The seller role is active only after administrator approval. | SO-03 | M | T | TC-FR-19 |
+| VFR-06 | Protection against injection, XSS and CSRF; zero high or critical findings in an OWASP ZAP baseline scan. | SO-04 | M | T | TC-VFR-06 |
+| FR-30 | Stock is decremented atomically, so concurrent orders cannot corrupt stock. | SO-04 | M | T | TC-FR-30 |
+| VFR-08 | Card data is never stored or logged. | SO-05 | M | I | TC-VFR-08 |
+| VFR-09 | At least 99 % availability, with a keep-alive and health checks every 5 minutes or less. | SO-06 | S | T, A | TC-VFR-09 |
+
+Coverage: every objective SO-01 to SO-06 is supported by at least one requirement, and there are 6 objectives and 12 requirements in total (more than the minimum of two of each). The Must requirements VFR-04, VFR-05, VFR-06 and VFR-08 are also part of the 26 Must requirements counted in Section 3.2.
+
+## 10.3 Security Assumptions
+
+- Card data is entered on the payment gateway's page and never reaches the system (Section 2.3, legal and security).
+- TLS is terminated by the hosting platform; the application must refuse to serve plain HTTP.
+- Only test data is used in this release.
+
+# 11. Mapping to the IEEE Software Requirements Specification Structure
+
+The document keeps its own headings, which follow the course Phase 1 checklist. The table shows where the content required by the IEEE 830 / ISO/IEC/IEEE 29148 outline is found, so a reader who expects that outline can locate it.
+
+| IEEE outline | Content | Where in this document |
+|---|---|---|
+| 1.1 Purpose, 1.2 Scope | Why the system exists, what is in and out | Sections 2.1, 2.2 |
+| 1.3 Definitions, abbreviations | Terms and identifier conventions | Sections 3.1, 6 |
+| 1.4 References | Repository and later phase documents | Cover page; Section 9 |
+| 1.5 Overview | How the document is organised | This table; Section 3 |
+| 2.1 Product perspective, 2.2 Product functions | Use cases and actors | Sections 6, 7, 8 |
+| 2.3 User characteristics | The four human actors | Section 6 |
+| 2.4 Constraints, 2.5 Assumptions and dependencies | Feasibility, risks, external systems | Sections 2.3, 2.4, 6 (Payment Gateway and Email Service), 10.3 |
+| 3.1 External interface requirements | Payment gateway and email service; REST API documentation | Section 6, VFR-15 |
+| 3.2 Functional requirements | FR-01 to FR-30 | Section 4.1 |
+| 3.3 Performance requirements | VFR-01 to VFR-03 | Section 4.2 |
+| 3.4 Design constraints | MERN stack | Cover page |
+| 3.5 Software system attributes | Security, availability, usability, accessibility, compatibility, maintainability, reliability, interoperability | Section 4.2; security in Section 10 |
+| 3.6 Other requirements | Capacity and platform | VFR-03, VFR-12 |
+| Appendix: traceability | Requirement, use case, test case | Section 5 |
+| Verification | Validation plan and entry/exit criteria | Section 9 |
+
