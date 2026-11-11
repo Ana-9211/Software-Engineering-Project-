@@ -24,7 +24,7 @@ One page for the final demo. Sources: `docs/sprint-1/Sprint1-Status-and-Deviatio
 ## Open items: say these before the teacher asks
 
 - VFR-12: only Edge and Chrome were driven by scripts. Firefox and Safari are not covered by the Sprint 2 evidence.
-- VFR-14: backups are run by hand unless the daily backup workflow is enabled with the `MONGODB_URI` secret. An Atlas restore has not been rehearsed.
+- VFR-14: backups are run by hand unless the daily backup workflow is enabled with the `MONGODB_URI` and `BACKUP_PASSPHRASE` repository secrets. An Atlas restore has not been rehearsed.
 - VFR-09: no availability figure yet; the uptime workflow needs the `DEPLOY_URL` variable.
 - VFR-02 and VFR-03 on the live site: not shown at the target on the free instance.
 
