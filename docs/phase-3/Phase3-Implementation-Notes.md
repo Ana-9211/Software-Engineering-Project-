@@ -22,7 +22,7 @@ Other databases: set `MONGODB_URI` to any replica set (Docker image `mongo --rep
 
 Demo accounts (password `Password123!`): `seller@bookstore.local` (customer and seller), `customer@bookstore.local`. The email provider is TBD, so the console mailer prints emails, including verification and reset links, to the server console; nothing is delivered. The payment provider is TBD, so the payment page uses a clearly labelled test gateway.
 
-Checks: `npm test` (server, 516 tests), `npm run test:client` (23 tests), `npm run lint`, `node e2e/e2e.mjs` (browser walkthrough, needs the server running and Edge or Chrome; see the header of that file).
+Checks: `npm test` (server, 531 tests), `npm run test:client` (28 tests), `npm run lint`, `node e2e/e2e.mjs` (browser walkthrough, needs the server running and Edge or Chrome; see the header of that file).
 
 ## 2. Structure
 
@@ -163,9 +163,9 @@ Environment: one Windows 11 laptop, Node 24.11, MongoDB 7.0.24 replica set (mong
 
 | Check | Command | Result |
 |---|---|---|
-| Server tests | `npm test` | 12 suites, 516 tests passed, 0 failed |
-| Server coverage | `npm run test:coverage -w server` | statements 94.41 %, branches 80.31 %, functions 95.96 %, lines 96.43 % (VFR-13 asks for 70 % lines) |
-| Client tests | `npm run test:client` | 1 file, 23 tests passed |
+| Server tests | `npm test` | 13 suites, 531 tests passed, 0 failed (516 in 12 suites when this section was first written; Sprint 2 added tests) |
+| Server coverage | `npm run test:coverage -w server` | statements 94.30 %, branches 80.54 %, functions 95.84 %, lines 96.29 % (VFR-13 asks for 70 % lines) |
+| Client tests | `npm run test:client` | 1 file, 28 tests passed |
 | Lint | `npm run lint` | 0 errors, 0 warnings |
 | Browser walkthrough | `node e2e/e2e.mjs` | 41 of 41 steps passed (Microsoft Edge only, real server and database) |
 | OpenAPI | `openapi.test.js` | document valid; 61 route handlers, none missing, none extra |
@@ -185,9 +185,9 @@ Environment: one Windows 11 laptop, Node 24.11, MongoDB 7.0.24 replica set (mong
 
 Reading: individual queries are fast and use the indexes (a test checks for an index scan and no collection scan). Under 100 users the p95 on this machine is around the 500 ms limit and varies from run to run; the load generator, API server and database compete for the same CPU, so the numbers are noisy. The limit is therefore neither shown to be met nor shown to be missed. The real test needs a deployed environment and a separate load tool.
 
-### NOT RUN
+### NOT RUN (at the end of Phase 3)
 
-These were not run, so there is no result for them: **OWASP ZAP baseline scan, Lighthouse (performance and accessibility score), k6/JMeter load tests, Firefox, Chrome and Safari cross-browser testing (only Edge was used), TLS checks, backup and restore, uptime monitoring.** The axe-core check in the browser walkthrough is an automated accessibility rule check, not a Lighthouse score. The CSRF, injection, access control, upload and header checks are automated tests in `security.test.js` and `authorization.test.js`, not a ZAP scan.
+Sprint 2 later ran some of these (Lighthouse, a load test, TLS/headers and the uptime workflow on the deployed site, backup and restore of a local database); see `docs/sprint-2/Sprint2-Status-and-Deviations.md` for what was and was not measured. At the end of Phase 3 these had not been run, so there was no result for them: **OWASP ZAP baseline scan, Lighthouse (performance and accessibility score), k6/JMeter load tests, Firefox, Chrome and Safari cross-browser testing (only Edge was used), TLS checks, backup and restore, uptime monitoring.** The axe-core check in the browser walkthrough is an automated accessibility rule check, not a Lighthouse score. The CSRF, injection, access control, upload and header checks are automated tests in `security.test.js` and `authorization.test.js`, not a ZAP scan.
 
 ## 7. Known limitations and technical debt
 
