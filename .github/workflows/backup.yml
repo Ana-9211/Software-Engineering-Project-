@@ -1,0 +1,63 @@
+name: Database backup
+
+# Daily backup of the production database (VFR-14). It does nothing until BOTH repository secrets are set
+# (Settings > Secrets and variables > Actions > Secrets):
+#   MONGODB_URI        connection string of the database to back up
+#   BACKUP_PASSPHRASE  passphrase used to encrypt the backup before it is stored
+# The backup is verified against its manifest, encrypted with GPG (AES-256) and kept as a workflow artifact for
+# 14 days. Only the encrypted file is uploaded; the plain backup never leaves the runner.
+# Restore: gpg --decrypt backup.tar.gz.gpg | tar xz, then node server/scripts/backup-db.js restore <dir> [dbName]
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that the secrets are set
+        id: gate
+        env:
+          HAS_URI: ${{ secrets.MONGODB_URI != '' }}
+          HAS_PASS: ${{ secrets.BACKUP_PASSPHRASE != '' }}
+        run: |
+          if [ "$HAS_URI" = "true" ] && [ "$HAS_PASS" = "true" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "MONGODB_URI or BACKUP_PASSPHRASE is not set; skipping."; echo "run=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci --ignore-scripts
+      - name: Back up and verify
+        if: steps.gate.outputs.run == 'true'
+        working-directory: server
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: |
+          set -e
+          node scripts/backup-db.js backup ../backups
+          dir=$(ls -d ../backups/*/ | sort | tail -n 1)
+          node scripts/backup-db.js verify "$dir"
+      - name: Encrypt the backup
+        if: steps.gate.outputs.run == 'true'
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -e
+          tar czf backup.tar.gz -C backups .
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 --symmetric --cipher-algo AES256 -o backup.tar.gz.gpg backup.tar.gz 3<<<"$BACKUP_PASSPHRASE"
+          rm -rf backups backup.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup.tar.gz.gpg
+          retention-days: 14

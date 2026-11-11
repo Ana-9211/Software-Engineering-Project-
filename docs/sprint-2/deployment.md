@@ -65,7 +65,7 @@ node scripts/backup-db.js verify  <backupDir>     # compares document counts wit
 node scripts/backup-db.js restore <backupDir> [dbName]
 ```
 
-`restore` refuses to write into a database that already has data unless `RESTORE_DROP=1` is set. To rehearse a restore, pass a different `dbName` such as `bookstore_restoretest`. The `backups/` folder is ignored by git. A local rehearsal restored all 13 collections with matching counts; a rehearsal against Atlas has not been done. No schedule exists yet: backups are manual.
+`restore` refuses to write into a database that already has data unless `RESTORE_DROP=1` is set. To rehearse a restore, pass a different `dbName` such as `bookstore_restoretest`. The `backups/` folder is ignored by git. A local rehearsal restored all 13 collections with matching counts; a rehearsal against Atlas has not been done. A daily backup runs from `.github/workflows/backup.yml` at 02:17 UTC once the repository secrets `MONGODB_URI` and `BACKUP_PASSPHRASE` are set. The job verifies the backup against its manifest, encrypts it with GPG (AES-256) and keeps only the encrypted file as a workflow artifact for 14 days. To read it, run `gpg --decrypt backup.tar.gz.gpg | tar xz`. Without the secrets the job skips itself. It can also be started by hand (Actions, Database backup, Run workflow).
 
 ## 8. Cold start and known limits
 
