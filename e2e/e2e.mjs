@@ -3,11 +3,14 @@
 //
 // Usage (server running on BASE_URL with the demo data and the admin account seeded):
 //   SERVER_LOG=/path/to/server.log node e2e/e2e.mjs
+// Cross-browser run (VFR-12): set BROWSER_NAME to chromium (default, uses Edge at BROWSER_PATH), firefox or webkit.
+// Firefox and WebKit use the browsers installed by `npx playwright-core install firefox webkit`:
+//   BROWSER_NAME=firefox SERVER_LOG=/path/to/server.log node e2e/e2e.mjs
 // The console mailer prints emails to the server log; the script reads the verification link from there.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { chromium } from 'playwright-core';
+import { chromium, firefox, webkit } from 'playwright-core';
 
 const require = createRequire(import.meta.url);
 const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -33,7 +36,12 @@ async function step(name, fn) {
 }
 const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
 
-const browser = await chromium.launch({ executablePath: EDGE, headless: true });
+const BROWSER_NAME = process.env.BROWSER_NAME || 'chromium';
+const engines = { chromium, firefox, webkit };
+if (!engines[BROWSER_NAME]) throw new Error(`BROWSER_NAME must be chromium, firefox or webkit, got "${BROWSER_NAME}"`);
+const browser = await engines[BROWSER_NAME].launch(
+  BROWSER_NAME === 'chromium' ? { executablePath: EDGE, headless: true } : { headless: true },
+);
 async function newSession(viewport = { width: 1280, height: 900 }) {
   const context = await browser.newContext({ viewport, baseURL: BASE });
   const page = await context.newPage();
