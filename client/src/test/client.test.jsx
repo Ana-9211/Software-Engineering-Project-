@@ -10,7 +10,7 @@ import StarRating from '../components/StarRating.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
 import { ReviewList } from '../modules/reviews/ReviewComponents.jsx';
 import { validateAddress, PaymentPage } from '../modules/checkout/CheckoutPages.jsx';
-import { validatePassword, EMAIL_PATTERN, RegisterPage } from '../modules/auth/AuthPages.jsx';
+import { validatePassword, EMAIL_PATTERN, RegisterPage, LoginPage } from '../modules/auth/AuthPages.jsx';
 import { RoleRoute } from '../auth/guards.jsx';
 import { AdminHome, PlatformReportPage } from '../modules/admin/AdminPages.jsx';
 import { SalesReportPage } from '../modules/seller/SellerPages.jsx';
@@ -213,6 +213,19 @@ describe('register form (FR-01, UC-04)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Register' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: /check your email/i })).toBeInTheDocument());
     fetchSpy.mockRestore();
+  });
+});
+
+describe('login form demo accounts (local development only)', () => {
+  test('clicking "Customer" fills the email field without logging in', async () => {
+    const login = vi.fn();
+    const authSpy = vi.spyOn(AuthModule, 'useAuth').mockReturnValue({ user: null, loading: false, login });
+    render(<MemoryRouter><LoginPage /></MemoryRouter>);
+    expect(screen.getByRole('group', { name: 'Demo accounts' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Customer' }));
+    expect(screen.getByLabelText('Email')).toHaveValue('customer@bookstore.local');
+    expect(login).not.toHaveBeenCalled();
+    authSpy.mockRestore();
   });
 });
 
