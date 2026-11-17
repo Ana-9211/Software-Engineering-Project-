@@ -124,6 +124,16 @@ export function VerifyEmailPage() {
   );
 }
 
+// Seeded demo accounts (npm run seed:demo, npm run seed:admin). Local development only:
+// import.meta.env.DEV is false in the production build, so this list is removed from the bundle.
+const DEMO_ACCOUNTS = import.meta.env.DEV
+  ? [
+      { label: 'Customer', email: 'customer@bookstore.local', password: 'Password123!' },
+      { label: 'Seller', email: 'seller@bookstore.local', password: 'Password123!' },
+      { label: 'Admin', email: 'admin@bookstore.local', password: 'Password123!' },
+    ]
+  : [];
+
 // S-05 Login (UC-05, FR-02)
 export function LoginPage() {
   const { login } = useAuth();
@@ -167,6 +177,22 @@ export function LoginPage() {
         <ErrorMessage error={error} />
         {error && error.code === 'EMAIL_NOT_VERIFIED' && (
           resent ? <p role="status">A new verification link has been sent.</p> : <button type="button" className="btn btn-small" onClick={resend}>Send the verification link again</button>
+        )}
+        {import.meta.env.DEV && (
+          <fieldset>
+            <legend>Demo accounts</legend>
+            {DEMO_ACCOUNTS.map((account) => (
+              <button
+                key={account.label}
+                type="button"
+                className="btn btn-small"
+                style={{ marginRight: 8 }}
+                onClick={() => setForm({ email: account.email, password: account.password })}
+              >
+                {account.label}
+              </button>
+            ))}
+          </fieldset>
         )}
         <TextField label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="username" required />
         <TextField label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="current-password" required />
