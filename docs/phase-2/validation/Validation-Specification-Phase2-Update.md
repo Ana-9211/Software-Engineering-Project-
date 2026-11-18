@@ -12,7 +12,14 @@ Validation Specification (Phase 2 Update)
 | **Technology Stack** | MERN (MongoDB, Express.js, React, Node.js) |
 | **Repository** | https://github.com/Ana-9211/Software-Engineering-Project- |
 | **Based on** | Phase 1 Requirements (unchanged) |
-| **Document Version** | 1.0 (Phase 2 draft for team review) |
+| **Document Version** | 1.1 (updated after Sprint 1 and Sprint 2; the finished project) |
+
+## Revision history
+
+| Version | Date | Author | Description |
+|---|---|---|---|
+| 1.0 | 2026-10-07 | Anagha N | Phase 2 draft for team review. Planning only; nothing had been executed. |
+| 1.1 | 2026-11-18 | Anagha N | Updated for the finished project: Cypress replaced by Playwright (`e2e/e2e.mjs`); test cases updated for the 15 deviations of Sprint 1 and Sprint 2; "Implemented in", "Actual result" and "Status" columns added from the test reports; see "Changes since the Phase 2 draft". |
 
 <div style="page-break-after: always;"></div>
 
@@ -77,7 +84,7 @@ This document updates the Phase 1 Validation Specification (`docs/phase-1/Phase1
 
 ## 1.3 Planning level
 
-Nothing in this document has been executed. There are no test results, coverage figures, performance numbers or scan results. Every statement describes what will be done, how, and what result will count as a pass. Tools are candidates; the final choice is made in Phase 3. Numbers such as 100 users, 500 ms and 3 s are the Phase 1 requirement values, not measurements.
+Version 1.1 keeps the Phase 2 test design and adds the results that were recorded during Sprint 1 and Sprint 2. Results come only from the project reports (`docs/reports/`, `docs/sprint-1/`, `docs/sprint-2/`, `docs/demo/Demo-Cheat-Sheet.md`) and from the test code. A result that no report records is marked Not run; it is never estimated. Numbers such as 100 users, 500 ms and 3 s in the "Key checks" columns are the Phase 1 requirement values; measured values appear only in the "Actual result" columns. The tools are now fixed (Jest with Supertest, Vitest, Playwright, the scripts in `validation/`); the Phase 2 candidates that were not used are named where they were planned.
 
 ## 1.4 Identifiers
 
@@ -108,7 +115,7 @@ Nothing in this document has been executed. There are no test results, coverage 
 | Repository and integration | Queries, indexes, constraints, transactions, module-to-module calls | AC-04, AC-05, interfaces I-03 to I-24 | Jest with a test MongoDB replica set |
 | API (contract and behaviour) | Every endpoint: status codes, bodies, validation, access control | AC-02, wire contract | Supertest or Postman collection, OpenAPI validator |
 | Adapter contract | Payment and email adapters against their interface | AC-06, AC-07, I-11, I-12 | Jest with the fake and, for the demo, the sandbox |
-| UI component and end-to-end | Screens, flows, route guards | AC-01, screens S-01 to S-30 | React Testing Library, Cypress or Playwright |
+| UI component and end-to-end | Screens, flows, route guards | AC-01, screens S-01 to S-30 | Vitest with React Testing Library; Playwright (`e2e/e2e.mjs`) |
 | Non-functional | Performance, accessibility, compatibility, availability | VFR-01 to VFR-03, VFR-09 to VFR-12 | k6, Lighthouse, browser matrix, uptime monitor |
 | Security | Authentication, authorization, injection, XSS, CSRF, abuse, dependencies | AC-01 to AC-07 | Supertest, OWASP ZAP, manual probes, dependency audit |
 | Acceptance | Use case walkthroughs by the team | All use cases | Manual script per use case |
@@ -335,28 +342,28 @@ Planned parent test cases of the 45 requirements. They are the Phase 1 test case
 
 | Test case | Requirement | Level | Key checks (planned) | Planned tools |
 |---|---|---|---|---|
-| TC-FR-01 | FR-01 | API, UI | Valid registration creates pending user and queues email; duplicate email (any case) rejected; password 7 chars rejected, 8 accepted; verification link activates account; expired link rejected. | Jest, Supertest, Cypress |
-| TC-FR-02 | FR-02 | API, UI | Correct login sets cookie; wrong password returns 401; token stops working after 60 minutes (clock control) and after logout. | Supertest, Cypress |
+| TC-FR-01 | FR-01 | API, UI | Valid registration creates pending user and queues email; duplicate email (any case) rejected; password 7 chars rejected, 8 accepted; verification link activates account; expired link rejected. | Jest, Supertest, Playwright |
+| TC-FR-02 | FR-02 | API, UI | Correct login sets cookie; wrong password returns 401; token stops working after 60 minutes (clock control) and after logout. | Supertest, Playwright |
 | TC-FR-03 | FR-03 | API | Reset link works once; second use fails; link at 29 minutes works and at 31 minutes fails; all sessions invalidated. | Supertest |
-| TC-FR-04 | FR-04 | API, UI | Seeded 45 books give pages of 20, 20, 5; page beyond last is empty; only approved listings appear. | Supertest, Cypress |
+| TC-FR-04 | FR-04 | API, UI | Seeded 45 books give pages of 20, 20, 5; page beyond last is empty; only approved listings appear. | Supertest, Playwright |
 | TC-FR-05 | FR-05 | API | Substring match on title, author and ISBN, case-insensitive and accent-insensitive: 1 and 2 character terms use prefix mode, 3 or more characters use the trigram index; no result gives an empty list; regex and $ characters are treated as text; search fields are updated after a title edit. | Supertest |
-| TC-FR-06 | FR-06 | API, UI | Each filter alone and combined; sort orders verified on seeded data; invalid sort rejected. | Supertest, Cypress |
-| TC-FR-07 | FR-07 | API, UI | Detail response and page contain every required field; unapproved book returns 404; out-of-stock status shown. | Supertest, Cypress |
-| TC-FR-08 | FR-08 | API, UI | Add, change and remove lines; cart still present after logout and login; guest cannot use cart endpoints. | Supertest, Cypress |
-| TC-FR-09 | FR-09 | API, UI | Available units are stock minus reserved. Stock 3: quantity 3 accepted, 4 rejected with message; two adds that exceed available stock together are rejected; units reserved by another customer's open checkout are not available. | Supertest, Cypress |
-| TC-FR-10 | FR-10 | API, UI | Add, duplicate add (one entry), remove; wishlist survives re-login. | Supertest, Cypress |
-| TC-FR-11 | FR-11 | API, UI | Order created with saved address and with entered address; neither or both rejected; another user's address rejected. | Supertest, Cypress |
+| TC-FR-06 | FR-06 | API, UI | Each filter alone and combined; sort orders verified on seeded data; invalid sort rejected. | Supertest, Playwright |
+| TC-FR-07 | FR-07 | API, UI | Detail response and page contain every required field; unapproved book returns 404; out-of-stock status shown. | Supertest, Playwright |
+| TC-FR-08 | FR-08 | API, UI | Add, change and remove lines; cart still present after logout and login; guest cannot use cart endpoints. | Supertest, Playwright |
+| TC-FR-09 | FR-09 | API, UI | Available units are stock minus reserved. Stock 3: quantity 3 accepted, 4 rejected with message; two adds that exceed available stock together are rejected; units reserved by another customer's open checkout are not available. | Supertest, Playwright |
+| TC-FR-10 | FR-10 | API, UI | Add, duplicate add (one entry), remove; wishlist survives re-login. | Supertest, Playwright |
+| TC-FR-11 | FR-11 | API, UI | Order created with saved address and with entered address; neither or both rejected; another user's address rejected. | Supertest, Playwright |
 | TC-FR-12 | FR-12 | Unit, API | Summary for known carts matches hand-calculated subtotal, tax, shipping, total in minor units; rounding cases. | Jest, Supertest |
-| TC-FR-13 | FR-13 | API, UI, demo | Order stays PendingPayment until payment is confirmed; forged signature rejected; sandbox payment succeeds and the order becomes Placed; a failed or cancelled payment releases the reservation and leaves the order unconfirmed; a gateway error at checkout releases the reservation. | Supertest with mock gateway, Cypress, demo with sandbox |
+| TC-FR-13 | FR-13 | API, UI, demo | Order stays PendingPayment until payment is confirmed; forged signature rejected; sandbox payment succeeds and the order becomes Placed; a failed or cancelled payment releases the reservation and leaves the order unconfirmed; a gateway error at checkout releases the reservation. | Supertest with the fake gateway, Playwright (`e2e/e2e.mjs`); sandbox demo not possible (deviation 4) |
 | TC-FR-14 | FR-14 | API | Confirmation notification created and email sent within 60 seconds of confirmation (mock mailer timestamps); email failure does not fail the order and is retried. | Jest, Supertest |
-| TC-FR-15 | FR-15 | API, UI | History shows only own confirmed orders newest first; statuses follow item updates; PendingPayment orders hidden. | Supertest, Cypress |
-| TC-FR-16 | FR-16 | API, UI | Cancel at Placed and Packed restores stock and starts the refund; cancel of an unpaid order releases the reservation and makes no refund call; Shipped and Delivered rejected; double cancel rejected. | Supertest, Cypress |
-| TC-FR-17 | FR-17 | API, UI | Review accepted only after delivery; rating 0 and 6 rejected; second review rejected; average rating updated. | Supertest, Cypress |
-| TC-FR-18 | FR-18 | API, UI | Profile edit persists; 5 addresses accepted and 6th rejected, also under concurrent requests; edit and delete own address only. | Supertest, Cypress |
+| TC-FR-15 | FR-15 | API, UI | History shows only own confirmed orders newest first; statuses follow item updates; PendingPayment orders hidden. | Supertest, Playwright |
+| TC-FR-16 | FR-16 | API, UI | Cancel at Placed and Packed restores stock and starts the refund; cancel of an unpaid order releases the reservation and makes no refund call; Shipped and Delivered rejected; double cancel rejected. | Supertest, Playwright |
+| TC-FR-17 | FR-17 | API, UI | Review accepted only after delivery; rating 0 and 6 rejected; second review rejected; average rating updated. | Supertest, Playwright |
+| TC-FR-18 | FR-18 | API, UI | Profile edit persists; 5 addresses accepted and 6th rejected, also under concurrent requests; edit and delete own address only. | Supertest, Playwright |
 | TC-FR-19 | FR-19 | API | Application pending until approved; seller endpoints return 403 before approval and succeed after; rejected applicant can apply again. | Supertest |
-| TC-FR-20 | FR-20 | API, UI | Create, edit, remove own listing; another seller's listing returns 404; new listing hidden until approved; image rules enforced. | Supertest, Cypress |
+| TC-FR-20 | FR-20 | API, UI | Create, edit, remove own listing; another seller's listing returns 404; new listing hidden until approved; image rules enforced. | Supertest, Playwright |
 | TC-FR-21 | FR-21 | API | Available 0 shows Out of stock (also while every unit is reserved); crossing the threshold at confirmation creates one alert; the alert can be read and marked read; stock cannot be set below the reserved units. | Supertest |
-| TC-FR-22 | FR-22 | API, UI | Seller sees only own items of mixed orders; valid transitions accepted; skipping or reversing rejected; order status derived correctly. | Supertest, Cypress |
+| TC-FR-22 | FR-22 | API, UI | Seller sees only own items of mixed orders; valid transitions accepted; skipping or reversing rejected; order status derived correctly. | Supertest, Playwright |
 | TC-FR-23 | FR-23 | API | Report totals equal hand-computed values for seeded orders; cancelled orders excluded; invalid range rejected. | Supertest |
 | TC-FR-24 | FR-24 | API | Suspended user cannot log in and an existing token stops working; reactivation restores login; admin cannot suspend self. | Supertest |
 | TC-FR-25 | FR-25 | API | Approve and reject for applications and listings; decided items cannot be decided again; approved listing appears in catalog. | Supertest |
